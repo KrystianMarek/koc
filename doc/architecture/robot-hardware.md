@@ -46,6 +46,17 @@ robot runs `server.py`; all client connections are inbound (5556/5559/5560).
   (±27°, accelerometer feedback, verified 2026-10-25 — see
   [kinect interface](kinect-interface.md)). V1 wires only the yaw; tilt is
   stubbed out end-to-end (no packet, `kinect_process.py` returns 0).
+- **Turret gearing**: **~125 ticks per turret degree ≈ 125:1** (measured
+  2026-10-25 via Kinect optical angle reference, ±10% — see
+  [turret calibration](../sources/2026-10-25-turret-calibration.md)).
+  At speed 80 the turret pans ~4°/s. **Cables run through the turret —
+  rotation is limited; never rotate unbounded.** Position is tracked by the
+  cumulative encoder (persists while the BrickPi is powered).
+- **Turret homing mark**: the color sensor (PORT_1) sweeps ~5 cm above the
+  body; a cable at the body's back marks camera-forward (the original paper
+  dial is destroyed). Signal quality is excellent (σ≈1 counts, features
+  ~45σ), but the first detected feature (encoder ≈ −3468, 2026-10-25) does
+  not match the expected cable position — identification open.
 
 ## Dependencies
 

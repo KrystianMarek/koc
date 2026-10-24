@@ -13,6 +13,17 @@ Timeline: `grep "^## \[" doc/log.md | head`.
 
 ---
 
+## [2026-10-25] ingest | Turret gear ratio measured (~125:1), homing mark investigated
+
+Constraint learned: cables run through the turret — rotation is limited, no
+full revolutions (the cancelled first calibration assumed them; superseded by
+`turret_ratio_probe.py` small swings). Gear ratio measured optically: scene
+shift via Kinect frame correlation ÷ `KINECT_FX` vs encoder delta →
+**~125 ticks/turret-degree ≈ 125:1** (±10%, 4 swings, corr ≥0.998). Color
+sensor detects surface changes at ~45σ but the first feature (encoder −3468)
+is not the expected cable position — identification open. Raw:
+[sources/2026-10-25-turret-calibration.md](sources/2026-10-25-turret-calibration.md).
+
 ## [2026-10-25] ingest | Kinect tilt motor verified (user visually confirmed)
 
 The Kinect base tilt motor (NUI Motor USB interface, ±27°, accelerometer
