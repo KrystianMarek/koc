@@ -67,6 +67,12 @@ onboard NPU running `duck-detect`. State as of 2026-10-24:
   TPU EOL 2026; Hailo needs PCIe. **CPU INT8 inference is the only
   future-proof default on this platform** — treat any accelerator as a
   pluggable backend.
+- **Vs Microduck's NPU**: the RK3566 NPU is ~0.8 TOPS INT8 — roughly **16×
+  the MAC throughput** of the NCS1's ~100 GFLOPS FP16, with no USB bottleneck
+  (on-SoC, shared memory) and a live toolchain (RKNN-Toolkit2 vs archived
+  NCSDK). Still an entry-class accelerator (Rockchip: "a practical
+  accelerator, not a miracle worker") — Microduck's `duck-detect` is a
+  deliberately tiny one-class model, sized to the job, not the peak number.
 
 Raw evidence: [2026-10-24 NCS state](../sources/2026-10-24-ncs-state.md).
 
