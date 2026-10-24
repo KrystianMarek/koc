@@ -441,4 +441,3 @@ class KinectPacket(Packet):
 
     def get_tilt_degs(self):
         return self._tilt_degs
-
