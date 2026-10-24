@@ -13,6 +13,17 @@ Timeline: `grep "^## \[" doc/log.md | head`.
 
 ---
 
+## [2026-10-24] ingest | Intel NCS (USB accelerator) verified + documented
+
+Confirmed the NCS1 (`03e7:2150`, Myriad 2) on the robot: **boot mode**, no
+loadable runtime (partial `/opt/movidius` NCSDK, no importable mvnc, no udev
+rules), junk NCSDK tarballs in `~` (S3 error XML). Cloned
+ncsdk/ncappzoo/libedgetpu into `external/` (ncsdk+ncappzoo match the existing
+submodule pins). V2 stance: CPU INT8 default, accelerators pluggable —
+[sources/2026-10-24-ncs-state.md](sources/2026-10-24-ncs-state.md),
+hardware page section, vision Phase 5 updated. Fixed stale bd IDs
+(`koc-hw-*`) across pages.
+
 ## [2026-10-24] ingest | BrickPi + Kinect library analysis for v2
 
 Analyzed the hardware interface libraries v1 depends on. **Key correction**:

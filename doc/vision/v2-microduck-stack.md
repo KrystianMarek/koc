@@ -51,17 +51,30 @@ robot):
 3. **Phase 2** — `camerad` (throttled capture; stream parity with v1).
 4. **Phase 3** — client adapter + `robotctl`; retire ZMQ pickle path.
 5. **Phase 4** — update story (systemd units → signed releases).
-6. **Phase 5** (optional) — ONNX runtime for onboard vision models
-   (Microduck's `duck-detect` analog; the NCS is legacy).
+6. **Phase 5** (optional) — onboard perception models (Microduck's `duck-detect`
+   analog): the robot's USB "NPU" is the legacy Intel NCS1 (boot-mode, dead
+   SDK — see [NCS state](../sources/2026-10-24-ncs-state.md)); default to CPU
+   INT8 inference on the RPi 3 with accelerators as a pluggable backend.
 
 ## Open Questions
 
-- **BrickPi driver in Rust**: the mature driver is Dexter's Python lib over
-  I2C; the firmware wire protocol is documented in `dependencies/BrickPi`
-  (`BrickPi_C/BrickPi.h`). Reimplement in Rust on `linux-embedded-hal`, or
-  keep a small Python sidecar for v2.1? (Decision needed before Phase 1.)
-- **Kinect capture in Rust**: `freenect` crates exist but are thin; a C/FFI
-  sidecar may be pragmatic. Tied to the same decision.
+- **BrickPi driver in Rust**: protocol now fully decoded — see
+  [brickpi-interface](../architecture/brickpi-interface.md). The board speaks
+  **UART** (500 kbaud on `/dev/ttyS0`, two ATmega3250s at addresses 1/2,
+  checksummed frames), *not* I2C as widely assumed. Recommendation: Rust
+  driver on `serialport-rs`, enable the firmware deadman
+  (`TIMEOUT_SETTINGS`), wire `E_STOP` to crash handlers, differential-test
+  against `BrickPi.py` as the oracle. Confirm in the plan.
+- **Kinect capture in Rust**: `freenect` crates exist but are thin (2015-era);
+  the C API surface needed is ~15 functions
+  ([kinect-interface](../architecture/kinect-interface.md)) — a minimal FFI
+  or a C sidecar are both viable. Tied to the same decision.
+- **Perception accelerator**: the NCS1 (Myriad 2, ~100 GFLOPS FP16) is
+  present but boot-mode with a dead, archived SDK; Coral Edge TPU is EOL
+  (2026); Hailo needs PCIe the RPi 3 lacks. Default: CPU INT8 inference for
+  small models, keep any accelerator a pluggable backend — see
+  [2026-10-24 NCS state](../sources/2026-10-24-ncs-state.md). Decide before
+  Phase 5.
 - **Client↔robot transport**: UDS is on-robot only; cross-network still needs
   something (keep ZMQ short-term? WebSocket gateway like Microduck's
   rendezvous lane? WebRTC later?).

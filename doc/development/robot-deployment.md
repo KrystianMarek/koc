@@ -25,9 +25,10 @@ evidence: [state capture](../sources/2026-10-24-robot-state-capture.md).
 
 | Issue | Impact | Tracker |
 |---|---|---|
-| Kinect capture unthrottled + `KinectProcess` forks after parent ZMQ setup (inherited fds confirmed via `ss`) | Server wedges after minutes: telemetry stops silently, Kinect child pegs CPU (139%) and floods the aggregator (5.7 GB/33 min) | `bd` `robot-kinect-wedge` |
-| `sync.sh` targets `~/koc` (basename of local dir) but robot uses `~/rpi_lego_robot`; also doesn't exclude `.beads/`, `.claude/`, `external/` | Next sync would create a duplicate tree on the robot / push junk | `bd` `robot-sync-target` |
-| Kinect behind two USB hubs | libfreenect resync storms ("Invalid magic" log spam), likely contributes to the wedge | part of `robot-kinect-wedge` |
+| Kinect capture unthrottled + `KinectProcess` forks after parent ZMQ setup (inherited fds confirmed via `ss`) | Server wedges after minutes: telemetry stops silently, Kinect child pegs CPU (139%) and floods the aggregator (5.7 GB/33 min) | `bd` `koc-hw-kinect-wedge` |
+| `sync.sh` targets `~/koc` (basename of local dir) but robot uses `~/rpi_lego_robot`; also doesn't exclude `.beads/`, `.claude/`, `external/` | Next sync would create a duplicate tree on the robot / push junk | `bd` `koc-hw-sync-target` |
+| Kinect behind two USB hubs | libfreenect resync storms ("Invalid magic" log spam), likely contributes to the wedge | part of `koc-hw-kinect-wedge` |
+| Stale tarballs in `~` on the robot (`NCSDK-1.12.01.01.tar.gz` is a 443 B S3 error XML; `ncappzoo_data.tar.gz` is a stub) | Misleading; a future NCS setup must use the documented mirror instead | cleanup chore |
 | `app/Networking` PascalCase vs lowercase imports | Broke local headless probe; would break any fresh case-sensitive deploy (the robot's copy is already correct) | **fixed locally** (git mv staged, uncommitted) |
 | Pickle over ZMQ | RCE if either endpoint is untrusted; fine on a trusted LAN | consideration |
 | No automated tests / CI, no lint config | Pure logic (depth math, command translation) unverified | — |

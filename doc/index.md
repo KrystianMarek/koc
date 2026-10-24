@@ -22,6 +22,9 @@ Status: ✅ live · 🚧 stub / planned
 |---|---|
 | [sources/](sources/README.md) | Requirements, transcripts, external references, research notes |
 | [sources/2026-10-24-microduck-analysis.md](sources/2026-10-24-microduck-analysis.md) | NVIDIA/Pollen/HF Microduck robot: spec, onboard software, training stack, clones in `external/` |
+| [sources/2026-10-24-robot-state-capture.md](sources/2026-10-24-robot-state-capture.md) | SSH surveys + probe transcripts from the live robot |
+| [sources/2026-10-24-hardware-libs-capture.md](sources/2026-10-24-hardware-libs-capture.md) | BrickPi UART protocol + libfreenect API facts, upstream repo status |
+| [sources/2026-10-24-ncs-state.md](sources/2026-10-24-ncs-state.md) | Intel NCS (USB accelerator) state on the robot + ecosystem status |
 | [guidance/](guidance/README.md) | External expert consultations (requests + responses) |
 | [inbox/](inbox/README.md) | Untriaged incoming feature requests |
 

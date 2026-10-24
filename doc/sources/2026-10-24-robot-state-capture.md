@@ -98,4 +98,4 @@ Diagnosis: KinectProcess forks AFTER the parent's ZMQ sockets/context exist
 (child visibly owns inherited fds on :5557 in `ss` output) — undefined ZMQ
 behavior; plus the unthrottled capture loop saturates CPU/USB; Kinect sits
 behind two USB hubs aggravating packet loss. Server restart restored normal
-operation. (Bugs filed in `bd`: `robot-kinect-wedge`, `robot-sync-target`.)
+operation. (Bugs filed in `bd`: `koc-hw-kinect-wedge`, `koc-hw-sync-target`.)

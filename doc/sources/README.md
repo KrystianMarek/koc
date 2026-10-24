@@ -30,6 +30,7 @@ See [AGENTS.md → Project as an LLM Wiki](../../AGENTS.md#project-as-an-llm-wik
 | [2026-10-24-microduck-analysis.md](2026-10-24-microduck-analysis.md) | Web research + `external/` clones (Pollen/HF Microduck) | 2026-10-24 | ✅ |
 | [2026-10-24-robot-state-capture.md](2026-10-24-robot-state-capture.md) | SSH surveys + probe transcripts from live robot 192.168.10.187 | 2026-10-24 | ✅ |
 | [2026-10-24-hardware-libs-capture.md](2026-10-24-hardware-libs-capture.md) | BrickPi UART protocol + libfreenect API facts, upstream repo status | 2026-10-24 | ✅ |
+| [2026-10-24-ncs-state.md](2026-10-24-ncs-state.md) | Intel NCS (USB accelerator) state on the robot + ecosystem status | 2026-10-24 | ✅ |
 
 ## Related
 
