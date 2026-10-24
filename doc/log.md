@@ -13,6 +13,22 @@ Timeline: `grep "^## \[" doc/log.md | head`.
 
 ---
 
+## [2026-10-25] progress | Kinect wedge root-caused deeper; spawn+throttle deployed
+
+The wedge is a **chain**: (1) fork-inherited ZMQ fds (fixed: spawn context),
+(2) unthrottled capture flooding the aggregator (fixed: 10 fps cap — note
+capture+compress alone eats >100 ms, so the cap only bounds push rate), (3)
+**orphaned spawn children surviving restarts** (SIGTERM kills the parent
+without reaping daemon children; they keep the camera + :5558 — restarts must
+`pkill -f "multiprocessing.spa[w]n"` too), and (4) the **root hardware
+cause: the Kinect USB link via the two-hub chain enters chronic libfreenect
+resync storms ("Stream 70") within minutes of streaming** — the child then
+spins at ~135% and jams the pipeline. Physical fix needed: Kinect on a
+dedicated USB port. Watcher running on the robot
+(`/tmp/koc_stream_watch.log`, 30 s window counts) to timestamp the
+degradation. Color-sweep data: the color reading is a smooth reproducible
+function of encoder position (no sharp corner feature in the swept arc).
+
 ## [2026-10-25] ingest | Turret gear ratio measured (~125:1), homing mark investigated
 
 Constraint learned: cables run through the turret — rotation is limited, no

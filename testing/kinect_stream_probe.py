@@ -18,7 +18,12 @@ import time
 
 import numpy as np
 import zmq
-from PIL import Image
+
+try:
+    from PIL import Image
+    HAVE_PIL = True
+except ImportError:
+    HAVE_PIL = False  # robot venv has no PIL; frame saving skipped
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -97,14 +102,16 @@ def main():
             depth.shape, depth.dtype, depth.min(), depth.max()))
 
         rgb_path = os.path.join(OUT_DIR, "kinect_rgb.png")
-        Image.fromarray(video).save(rgb_path)
-        print("saved", rgb_path)
+        if HAVE_PIL:
+            Image.fromarray(video).save(rgb_path)
+            print("saved", rgb_path)
 
         # Display conversion per Config.DEPTH_DISPLAY_BITS: clip to 10 bits, >> 2
         depth_8bit = (np.clip(depth, 0, 2**10 - 1) >> 2).astype(np.uint8)
         depth_path = os.path.join(OUT_DIR, "kinect_depth.png")
-        Image.fromarray(depth_8bit).save(depth_path)
-        print("saved", depth_path)
+        if HAVE_PIL:
+            Image.fromarray(depth_8bit).save(depth_path)
+            print("saved", depth_path)
         print("(received {} further kinect frames while waiting)".format(kinect_fps_counter))
     else:
         print("no KinectPacket - check robot log: tail /tmp/koc_server.log")
