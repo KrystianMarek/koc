@@ -12,6 +12,39 @@ on the turret. v1 captures 480×640 RGB + 480×640 uint16 depth (raw
 *disparity*, 0–2047). Audio and the tilt motor are enumerated but unused
 (tilt stubbed to 0 in `kinect_process.py`).
 
+## Tilt (pitch) motor
+
+The Kinect base contains a **motorized tilt** — the `Xbox NUI Motor` USB
+interface (`02b0`, shared with the LED) — with roughly **±27° travel** and an
+on-board accelerometer for feedback. libfreenect exposes it via
+`freenect_set_tilt_degs` / `freenect_get_tilt_state` (plus `freenect_set_led`
+on the same interface). Two hard-earned caveats:
+
+- **Do not spam `set_tilt_degs`**: it is a small DC gearmotor meant for
+  occasional repositioning, not continuous motion (rapid repeat commands are
+  the classic way to kill it). Rate-limit to ≥1–2 s between moves in v2.
+- Feedback is **coarse (~±1°)** — angles derive from the accelerometer, which
+  also serves as a crude level/inclinometer for the camera pose.
+
+**v1 status: stubbed out.** `kinect_process.py` returns 0 for tilt state and
+there is no tilt command packet — the capability was never wired.
+
+**Verified working 2026-10-25** (`testing/kinect_tilt_probe.py`, run on the
+robot): `0 → +12 → −12 → 0` commanded, actual `+11.00 / −12.00 / +0.00`
+(±1° accel resolution); motor held its position across all moves. The motor
+interface can be claimed **while another process holds the camera** (separate
+USB interfaces) — tilt and streaming are independent. Open question: the raw
+`get_mks_accel` readout printed near-zero on all axes at level (0/10/0
+milli-g) even though the derived angles are correct — verify the axis
+mapping/conversion before relying on raw accel in v2.
+
+**V2 design**: `camerad` owns the tilt motor — a `camera.tilt` intent,
+clamped to ±27°, internally rate-limited, with the accelerometer state as
+feedback. Combined with `motord`'s turret (yaw, PORT_C), that gives **two-axis
+camera aiming**: yaw = turret servo, pitch = Kinect tilt. The LED doubles as
+the privacy indicator (Microduck's camera-LED pattern: visible whenever the
+picture leaves the robot).
+
 ## The v1 stack
 
 - **libfreenect** (OpenKinect) — the only open driver for Kinect v1. Built

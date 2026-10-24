@@ -13,6 +13,17 @@ Timeline: `grep "^## \[" doc/log.md | head`.
 
 ---
 
+## [2026-10-25] ingest | Kinect tilt motor verified (user visually confirmed)
+
+The Kinect base tilt motor (NUI Motor USB interface, ±27°, accelerometer
+feedback) works: 0 → +12 → −12 → 0 commanded, ±1° accuracy, robot-side probe
+`testing/kinect_tilt_probe.py`. V1 stubbed tilt out entirely; two-axis aiming
+(yaw = turret, pitch = tilt) documented for v2 `camerad` (rate-limited
+`camera.tilt` intent, LED as privacy indicator). Open: raw `get_mks_accel`
+axis mapping printed near-zero at level. Camera and motor interfaces are
+independent (tilt works while the server holds the camera).
+[sources: kinect-interface tilt section](architecture/kinect-interface.md).
+
 ## [2026-10-24] ingest | Intel NCS (USB accelerator) verified + documented
 
 Confirmed the NCS1 (`03e7:2150`, Myriad 2) on the robot: **boot mode**, no

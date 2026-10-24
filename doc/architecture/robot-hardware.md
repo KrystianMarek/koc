@@ -41,6 +41,11 @@ robot runs `server.py`; all client connections are inbound (5556/5559/5560).
 - **Depth encoding**: raw Kinect depth is *disparity* (0–2047); values >1023
   invalid; valid range observed 554–1023 for the desk scene. Display path:
   clip to 10 bits, `>> 2` (see `Config.DEPTH_DISPLAY_BITS`).
+- **Two-axis camera aiming**: yaw = BrickPi turret (PORT_C, drivable via
+  `TurretLeft/Right`, verified); pitch = **Kinect internal tilt motor**
+  (±27°, accelerometer feedback, verified 2026-10-25 — see
+  [kinect interface](kinect-interface.md)). V1 wires only the yaw; tilt is
+  stubbed out end-to-end (no packet, `kinect_process.py` returns 0).
 
 ## Dependencies
 
