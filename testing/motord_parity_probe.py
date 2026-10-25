@@ -125,6 +125,13 @@ def start_motord():
     subprocess.Popen(["nohup", MOTORD_BIN, SOCK, "/dev/ttyS0", "60"],
                      stdout=open("/tmp/motord.log", "a"), stderr=subprocess.STDOUT)
     for _ in range(40):
+        try:
+            rpc("status")  # a real RPC, not just the socket file's existence
+            return True
+        except Exception:
+            time.sleep(0.25)
+    return False
+    for _ in range(40):
         if motord_running():
             time.sleep(1.0)
             return True
@@ -396,7 +403,8 @@ def turret_const(seconds=18.4, speed_pct=32):
     """Constant turret pwm via motord for a fixed time - the direct
     comparison with a v1 swing leg (11250 ticks in 18.4 s at pwm 82).
     Prints the rate + the error counter so a failing UART exchange is visible."""
-    if not motord_running() and not start_motord():
+    stop_motord()  # always fresh: a stale socket masquerades as a daemon
+    if not start_motord():
         sys.exit("motord failed to start")
     c0 = snap_encoders()
     t0 = time.time()
@@ -482,9 +490,12 @@ def rotate_to(target=297, speed_pct=32, burst_s=12.0):
     stays minimal: to return to the original facing use the original
     position itself (297), NOT 297+45000 (that would wrap a full turn).
 
-    Stall guard: aborts if a full burst progresses <100 ticks/s (the
-    cable-binding signature). The final 2500 ticks run at pwm ~20 so the
-    coast lands within ~50 ticks of the target.
+    During each burst the intent refresh thread runs untouched and NO
+    snapshot polls happen (they starved the refresh below the 400 ms
+    expiry and produced false stall readings on 2026-10-25). The position
+    is sampled once before and once after each burst; the rate is
+    dC/burst_s - the honest motion window. Stall guard: abort if a full
+    burst progresses <100 ticks/s.
     """
     stop_motord()
     if not start_motord():
@@ -509,33 +520,39 @@ def rotate_to(target=297, speed_pct=32, burst_s=12.0):
             break  # close enough; the coast lands it
         pct = speed_pct if abs(gap) > 2500 else 10  # the gentle final approach
         go = [True]
+        diag = {"refresh_fails": 0}
 
         def refresh():
             while go[0]:
                 try:
                     rpc("turret", json.dumps({"pct": pct * direction}))
                 except Exception:
-                    pass
+                    diag["refresh_fails"] += 1
                 time.sleep(0.1)
 
         thr = threading.Thread(target=refresh)
         thr.start()
-        t0 = time.time()
-        early = False
-        while time.time() - t0 < burst_s:
+        t_b = time.time()
+        next_diag = burst_s / 3.0
+        while time.time() - t_b < burst_s:
             time.sleep(0.1)
-            if abs(target - snap_encoders()["C"]) < 300:
-                early = True
-                break
+            if time.time() - t_b >= next_diag:
+                t_s = time.time()
+                snap = rpc("snapshot")["result"]
+                lat = time.time() - t_s
+                print("    diag@{:.1f}s: C={} errors={} loops={} snap_lat={:.2f}s refresh_fails={}".format(
+                    time.time() - t_b, snap["encoders"]["C"], snap["errors"],
+                    snap["loops"], lat, diag["refresh_fails"]))
+                next_diag += burst_s / 3.0
         go[0] = False
         thr.join()
         rpc("turret", json.dumps({"pct": 0}))
-        time.sleep(0.6)
+        time.sleep(0.8)  # the coast settles
         c_now = snap_encoders()["C"]
-        rate = abs(c_now - c_leg0) / (time.time() - t0)
+        rate = abs(c_now - c_leg0) / float(burst_s)
         print("  burst {}: dC={} (now C={}, remaining {}, rate {:.0f} ticks/s)".format(
             leg, c_now - c_leg0, c_now, target - c_now, rate))
-        if early or abs(target - c_now) < 300:
+        if abs(target - c_now) < 300:
             break
         if rate < 100.0:
             print("  ABORT: rate collapsed - possible cable binding; robot idle")
@@ -571,7 +588,9 @@ def main():
         v1_swing90()
         return
     if mode == "turretconst":
-        turret_const()
+        secs = float(sys.argv[2]) if len(sys.argv) > 2 else 18.4
+        pct = int(sys.argv[3]) if len(sys.argv) > 3 else 32
+        turret_const(seconds=secs, speed_pct=pct)
         return
     if mode == "return":
         tgt = int(sys.argv[2]) if len(sys.argv) > 2 else 297
