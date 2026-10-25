@@ -24,6 +24,20 @@ the child on SIGTERM (no more orphans on restart). User constraint recorded:
 the Kinect must stay on the powered hub chain (power source), so storms are
 mitigated by recovery, not relocation.
 
+## [2026-10-25] progress | Swing mission repeated: trajectory repeats ±10 ticks, center = +401
+
+Repeat run (blob-driven recenter): all legs 100% again; the trajectory
+matches run 2 within ~±10 ticks after the start-offset alignment; color
+reproduces within 1-2 counts at every pose; return error 91 ticks (vs 6) —
+the honest repeatability bound is ±100 ticks (±0.8°), set by the recenter.
+Both runs' blob data fits `blob_x = 320 + (enc − 401) × 0.092` → **the true
+center is encoder ≈ +401**; blob hysteresis ~12-15 px between approach
+directions (the 252-tick backlash, confirmed). The per-frame ratio
+cross-check failed on encoder timestamp skew — 125 ticks/° stands on the
+optical method. Raw appended to
+[sources/2026-10-25-swing90-run.md](sources/2026-10-25-swing90-run.md);
+koc-swing90-repeat closed.
+
 ## [2026-10-25] progress | ±90° swing mission: reliable, return error 0.05°
 
 Mission koc-swing90 complete: LEFT 90 → RIGHT 180 → LEFT 90 with

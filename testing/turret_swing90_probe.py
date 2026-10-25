@@ -1,26 +1,19 @@
 #!/usr/bin/env python3
 """
-90-degree turret swing reliability probe - run ON the robot (server up).
+90-degree turret swing reliability probe (repeat run) - ON the robot.
 
-Mission (bd koc-swing90): swing the turret LEFT 90 deg off center, then
-RIGHT 180 deg, then LEFT 90 deg back - and check reliability + return
-accuracy. The robot is static; measurements come from the encoder (PORT_C),
-the color sensor (PORT_1), the ultrasonic sensor (PORT_4, obstacle at ~75 cm
-dead-ahead = ground truth) and the Kinect depth stream.
+Same mission as the 2026-10-25 first run (LEFT 90 -> RIGHT 180 -> LEFT 90,
+encoder-driven legs, stall abort) with three upgrades for verification:
 
-Legs are ENCODER-DRIVEN: stream commands until |encoder - leg start| reaches
-the target ticks, so the ratio's +-10% uncertainty does not affect the
-travel. Safety:
-- stall abort: a leg that undershoots 85% of its target (motor blocked,
-  likely the in-turret cables) aborts the whole mission
-- hard duration cap per leg (1.6x the expected time)
-- deadman streaming at 10 Hz; kill anytime - motors stop in ~0.3 s
-
-Per-pose snapshots (after a settle): encoder, color stats, sonar, kinect
-depth stats (center-region raw, nearest-blob centroid/raw, valid fraction).
-The final pose checks the return: encoder vs start, color vs the start
-value, and whether the 75 cm obstacle blob re-centers on the image
-(x ~ 320).
+1. **Blob-driven recenter**: small right steps until the obstacle blob
+   crosses the image center (x<=320) - finer than the previous 150-tick
+   band that left the turret slightly off center.
+2. **Per-frame blob logging** during the whole run: the blob-x vs encoder
+   slope gives an independent cross-check of the 125 ticks/deg ratio
+   (parallax-aware: the slope depends on the target depth, reported
+   alongside the blob's own raw distance).
+3. **Side-by-side comparison** against the previous run's measured values
+   (return 6 ticks, color 768/768, blob x=335, sonar 75).
 
 Usage (on the robot):
     cd ~/rpi_lego_robot && ~/.virtualenvs/pi_robot3/bin/python \\
@@ -45,15 +38,21 @@ from app.networking import (
 SPEED = int(sys.argv[1]) if len(sys.argv) > 1 else 50
 TICKS_PER_DEG = 125.0                   # measured 2026-10-25 (+-10%)
 TARGET_TICKS = int(90 * TICKS_PER_DEG)  # 11250
-# Stream at the wrapper's consumption rate (~1 cmd per 0.3 s cycle): a 0.1 s
-# period backs up the 100-deep command queue during long legs and the backlog
-# keeps executing after the reset (~1641-tick overshoot measured 2026-10-25).
+# Stream at the wrapper's consumption rate (~1 cmd per 0.3 s cycle): faster
+# streaming backs up the 100-deep command queue and the backlog keeps
+# executing after the reset (the 1641-tick overshoot of run 1).
 STREAM_PERIOD = 0.3
 SETTLE_S = 1.5
-TICKS_PER_S = 5.12 * SPEED              # measured ticks/s per speed unit
+TICKS_PER_S = 5.12 * SPEED              # nominal; observed non-linear
 OUT_DIR = "/tmp/koc_calib"
 
+# previous run (2026-10-25, first clean run) for the side-by-side
+PREV = {"return_ticks": 6, "color_center0": 768, "color_final": 768,
+        "blob_x_final": 335, "blob_raw_final": 665, "sonar": 75,
+        "recenter_right_approach": 271}
+
 push = None
+blob_log = []   # (t, encoder_at_frame, blob_x, blob_raw)
 
 
 def handshake(ctx):
@@ -69,6 +68,20 @@ def handshake(ctx):
     except zmq.Again:
         sys.exit("no handshake response - is the server running?")
     req.close()
+
+
+def blob(depth):
+    """Nearest-valid cluster: (centroid_x, raw_median) or None."""
+    valid = (depth >= 300) & (depth <= 1008)
+    if not valid.any():
+        return None
+    vals = depth[valid]
+    thresh = np.percentile(vals, 10)
+    mask = valid & (depth <= thresh + 5)
+    ys, xs = np.nonzero(mask)
+    if len(xs) < 50:
+        return None
+    return float(xs.mean()), float(np.median(depth[mask]))
 
 
 def pump(sub, seconds, log, frames, stream=None):
@@ -89,7 +102,11 @@ def pump(sub, seconds, log, frames, stream=None):
                         packet.color_sensor.raw,
                         packet.ultrasound_sensor.raw))
         elif isinstance(packet, KinectPacket):
-            frames.append((time.time(), np.asarray(packet.get_depth())))
+            depth = np.asarray(packet.get_depth())
+            frames.append((time.time(), depth))
+            b = blob(depth)
+            if b is not None:
+                blob_log.append((time.time(), latest_enc(log), b[0], b[1]))
 
 
 def latest_enc(log):
@@ -120,6 +137,12 @@ def depth_stats(depth):
     return frac, ctr, braw, bx, int(len(xs))
 
 
+def enc_around(log, t0, t1):
+    arr = np.array([(l[0], l[1]) for l in log], dtype=float)
+    return (float(arr[np.argmin(np.abs(arr[:, 0] - t0)), 1]),
+            float(arr[np.argmin(np.abs(arr[:, 0] - t1)), 1]))
+
+
 def snapshot(label, sub, log, frames):
     time.sleep(SETTLE_S)
     mark = time.time()
@@ -141,8 +164,6 @@ def snapshot(label, sub, log, frames):
                             "{:.0f}".format(ctr) if ctr else "-",
                             "{:.0f}".format(bx) if bx else "-",
                             "{:.0f}".format(braw) if braw else "-", n))
-    else:
-        print("{:>10}   kinect: no frames".format(""))
     return {"label": label, "enc": enc,
             "color_med": float(np.median(col)) if col.size else -1,
             "sonar_med": float(np.median(son)) if son.size else -1,
@@ -209,26 +230,31 @@ def main():
     frames = deque(maxlen=40)
     log = []
 
-    print("baseline 3 s at center...")
+    print("baseline 3 s...")
     pump(sub, 3.0, log, frames)
     e_start = latest_enc(log)
 
-    # --- recenter toward the backlash midpoint (~+401) before the legs ---
-    # The previous mission ended ~13 deg left of center (command-queue
-    # backlog); the mechanical center sits in the 275..527 backlash band.
-    PREDICTED_CENTER = 401
-    t_rc = time.time()
-    while abs(latest_enc(log) - PREDICTED_CENTER) > 150 and \
-            time.time() - t_rc < 60:
-        d = TurretRight(SPEED) if latest_enc(log) > PREDICTED_CENTER \
-            else TurretLeft(SPEED)
-        pump(sub, 0.5, log, frames, stream=d)
+    # --- blob-driven recenter: right steps until the blob crosses x=320 ---
+    # (approaching center from the left side, matching the run-2 geometry)
+    print("\nblob-driven recenter (right steps, stop at blob x<=320)...")
+    for i in range(24):
+        depth = latest_depth(frames, time.time() - 2.0)
+        st = depth_stats(depth) if depth is not None else None
+        b = blob(depth) if depth is not None else None
+        if b is not None and b[0] <= 320.0:
+            print("  recentered: blob x={:.0f} at encoder {}".format(
+                b[0], int(latest_enc(log))))
+            break
+        pump(sub, 0.3, log, frames, stream=TurretRight(25))
         push.send(compress(TurretReset()))
-        time.sleep(0.4)
-    e_start = latest_enc(log)
+        time.sleep(0.35)
+    else:
+        print("  recenter: blob never crossed x=320 in 24 steps - "
+              "continuing anyway")
 
     poses = [snapshot("center0", sub, log, frames)]
-    print("start encoder after recenter: {}".format(int(e_start)))
+    e_start = latest_enc(log)
+    print("start encoder: {}".format(int(e_start)))
 
     legs = [("left 90", TurretLeft(SPEED), TARGET_TICKS),
             ("right 180", TurretRight(SPEED), 2 * TARGET_TICKS),
@@ -236,8 +262,7 @@ def main():
 
     aborted = False
     for name, cmd, target in legs:
-        print("\nleg {} (target {} ticks, ~{:.0f} s at {} ticks/s)...".format(
-            name, target, target / float(TICKS_PER_S), TICKS_PER_S))
+        print("\nleg {} (target {} ticks)...".format(name, target))
         achieved, stalled = swing(sub, log, frames, cmd, target, name)
         if stalled or achieved < 0.85 * target:
             print("\n!!! LEG UNDERSHOOT {:.0f}% - mechanical limit or stall."
@@ -245,8 +270,7 @@ def main():
                       100.0 * achieved / target))
             aborted = True
             break
-        label = name.replace(" ", "")
-        poses.append(snapshot(label, sub, log, frames))
+        poses.append(snapshot(name.replace(" ", ""), sub, log, frames))
 
     if not aborted:
         poses.append(snapshot("center_final", sub, log, frames))
@@ -258,37 +282,74 @@ def main():
           "at {:.0f} ticks/deg)".format(
               int(e_start), int(e_end), e_end - e_start,
               (e_end - e_start) / TICKS_PER_DEG, TICKS_PER_DEG))
-    print("pose table:")
+    print("pose table (vs previous run in brackets):")
+    prev_poses = {"center0": (494, 768), "left90": (11750, 763),
+                  "right180": (-10857, 734), "left90home": (500, 768),
+                  "center_final": (500, 768)}
     for p in poses:
-        print("  {:>12}: enc {:>7.0f} color {:>4.0f} sonar {:>3.0f} "
-              "blob_x {} blob_raw {}".format(
-                  p["label"], p["enc"], p["color_med"], p["sonar_med"],
+        pv = prev_poses.get(p["label"], ("-", "-"))
+        print("  {:>12}: enc {:>7.0f} [prev {:>7}] color {:>4.0f} "
+              "[prev {:>4}] sonar {:.0f} blob_x {} "
+              "[prev {}]".format(
+                  p["label"], p["enc"], pv[0], p["color_med"], pv[1],
+                  p["sonar_med"],
                   "{:.0f}".format(p["blob_x"]) if p["blob_x"] else "-",
-                  "{:.0f}".format(p["blob_raw"]) if p["blob_raw"] else "-"))
+                  pv[1] if p["label"] == "center_final"
+                  else {"center0": 333, "left90": 139, "right180": 438,
+                        "left90home": 335}.get(p["label"], "-")))
     if not aborted:
         drift = e_end - e_start
-        print("return accuracy: {} ticks ({:+.2f} deg) off the start "
-              "position".format(int(drift), drift / TICKS_PER_DEG))
         c0, cf = poses[0], poses[-1]
-        print("center color: start {:.0f} -> final {:.0f}; sonar start "
-              "{:.0f} -> final {:.0f}".format(
-                  c0["color_med"], cf["color_med"],
-                  c0["sonar_med"], cf["sonar_med"]))
+        print("return accuracy: {} ticks ({:+.2f} deg) [previous run: "
+              "+6 ticks]".format(int(drift), drift / TICKS_PER_DEG))
+        print("center color: start {:.0f} -> final {:.0f} [prev 768 -> 768]"
+              .format(c0["color_med"], cf["color_med"]))
         if cf["blob_x"] is not None:
-            print("obstacle blob at final: x={:.0f} (320=centered) raw={:.0f}"
-                  .format(cf["blob_x"], cf["blob_raw"]))
-        else:
-            print("obstacle blob NOT seen at the final pose - obstacle "
-                  "moved/removed or kinect degraded")
+            print("obstacle blob at final: x={:.0f} [prev 335] raw={:.0f} "
+                  "[prev 665]".format(cf["blob_x"], cf["blob_raw"]))
 
-    csv_path = os.path.join(OUT_DIR, "swing90_full.csv")
+    # --- ratio cross-check from the per-frame blob slope ---
+    print("\n=== RATIO CROSS-CHECK (blob_x vs encoder slope) ===")
+    if len(blob_log) > 50:
+        arr = np.array(blob_log, dtype=float)
+        # obstacle frames: blob raw 550..700 (~0.7-0.8 m) near center-ish
+        sel = arr[(arr[:, 3] >= 550) & (arr[:, 3] <= 700) &
+                  (arr[:, 2] > 60) & (arr[:, 2] < 580)]
+        print("obstacle frames: {} of {}".format(len(sel), len(arr)))
+        if len(sel) > 20:
+            enc, cx = sel[:, 1], sel[:, 2]
+            slope, intercept = np.polyfit(enc, cx, 1)
+            print("slope: {:.4f} px/tick (corr px per tick)".format(slope))
+            # rotation-only expectation at fx=594: 10.37 px/deg / 125 t/deg
+            # = 0.0830 px/tick; near-field parallax multiplies by
+            # (1 + d_cam/depth) with the blob's own depth measured:
+            raw_med = float(np.median(sel[:, 3]))
+            depth_m = 0.1236 * np.tan(raw_med / 2842.5 + 1.1863)
+            print("blob depth: {:.2f} m (parallax factor = 1 + d_cam/"
+                  "{:.2f})".format(depth_m, depth_m))
+            print("implied ticks/deg if d_cam=0: {:.1f}; the difference "
+                  "from 125 estimates the camera-axis offset".format(
+                      abs(1.0 / slope) * 180.0 / np.pi))
+        else:
+            print("not enough obstacle frames for a slope fit")
+    else:
+        print("blob log too sparse")
+
+    csv_path = os.path.join(OUT_DIR, "swing90_repeat.csv")
     with open(csv_path, "w") as f:
         wr = csv.writer(f)
         wr.writerow(["t", "encoder", "color", "sonar"])
         for row in log:
             wr.writerow([round(row[0], 3), int(row[1]), int(row[2]),
                          int(row[3])])
-    print("CSV saved:", csv_path, "| aborted:", aborted)
+    blob_path = os.path.join(OUT_DIR, "swing90_blobs.csv")
+    with open(blob_path, "w") as f:
+        wr = csv.writer(f)
+        wr.writerow(["t", "encoder", "blob_x", "blob_raw"])
+        for row in blob_log:
+            wr.writerow([round(row[0], 3), int(row[1]), round(row[2], 1),
+                         round(row[3], 0)])
+    print("CSV saved:", csv_path, "+", blob_path, "| aborted:", aborted)
 
     sub.close()
     push.close()
