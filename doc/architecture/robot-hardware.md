@@ -57,6 +57,15 @@ robot runs `server.py`; all client connections are inbound (5556/5559/5560).
   dial is destroyed). Signal quality is excellent (σ≈1 counts, features
   ~45σ), but the first detected feature (encoder ≈ −3468, 2026-10-25) does
   not match the expected cable position — identification open.
+- **Homing run 2026-10-25**: with an obstacle 75 cm dead-ahead (sonar-
+  confirmed, steady 75 across the whole sweep), the Kinect's nearest-depth
+  blob centered at **encoder ≈ +527, color ≈ 790** — the first measured
+  homing landmark pair. See
+  [turret homing run](../sources/2026-10-25-turret-homing-run.md).
+- **fd-leak fixed**: `get_voltage()` leaked one SMBus fd per call →
+  `Too many open files` killed the wrapper thread (~15-20 min) — the true
+  "telemetry death" root cause. Now closed per read (bd
+  `koc-hw-kinect-wedge`).
 
 ## Dependencies
 

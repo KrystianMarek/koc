@@ -24,6 +24,17 @@ the child on SIGTERM (no more orphans on restart). User constraint recorded:
 the Kinect must stay on the powered hub chain (power source), so storms are
 mitigated by recovery, not relocation.
 
+## [2026-10-25] progress | Homing landmark measured (encoder +527 / color 790); fd leak fixed
+
+First full homing sweep with sonar ground truth (75 cm obstacle dead-ahead):
+the Kinect's nearest-depth blob centered at **encoder ≈ +527, color ≈ 790**
+— the first measured homing landmark pair; sonar stayed 75 (chassis-fixed,
+never occluded). En route found + fixed the true "telemetry death" root
+cause: `get_voltage()` leaked one SMBus fd/call → `Too many open files`
+killed the wrapper thread in ~15-20 min. Raw:
+[sources/2026-10-25-turret-homing-run.md](sources/2026-10-25-turret-homing-run.md).
+Turret now ≈ 6° left of center (encoder +1268).
+
 ## [2026-10-25] progress | Kinect wedge root-caused deeper; spawn+throttle deployed
 
 The wedge is a **chain**: (1) fork-inherited ZMQ fds (fixed: spawn context),

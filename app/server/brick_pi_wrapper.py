@@ -198,10 +198,14 @@ class BrickPiWrapper(Thread):
 
         # time.sleep(0.1) # Necessary?
         try:
-            bus = smbus2.SMBus(1)            # SMBUS 1 because we're using greater than V1.
+            # SMBUS 1 because we're using greater than V1. Closed immediately:
+            # a fresh SMBus per read without close() leaked one fd per call
+            # and exhausted the process limit after ~15-20 min, killing the
+            # wrapper thread and telemetry with it (bd koc-hw-kinect-wedge).
             address = 0x48
-            # read data from i2c bus. the 0 command is mandatory for the protocol but not used in this chip.
-            data = bus.read_word_data(address, 0)
+            with smbus2.SMBus(1) as bus:
+                # the 0 command is mandatory for the protocol but not used in this chip.
+                data = bus.read_word_data(address, 0)
 
             # from this data we need the last 4 bits and the first 6.
             last_4 = data & 0b1111 # using a bit mask
@@ -220,4 +224,3 @@ class BrickPiWrapper(Thread):
         except Exception as e:
             self._logger.exception(e)
             return 0
-
