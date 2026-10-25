@@ -24,6 +24,18 @@ the child on SIGTERM (no more orphans on restart). User constraint recorded:
 the Kinect must stay on the powered hub chain (power source), so storms are
 mitigated by recovery, not relocation.
 
+## [2026-10-25] progress | ±90° swing mission: reliable, return error 0.05°
+
+Mission koc-swing90 complete: LEFT 90 → RIGHT 180 → LEFT 90 with
+encoder-driven legs — 100% target achievement on all legs, no stalls, no
+cable limits hit in the ±90° span; return error **6 ticks (0.05°)**. Run 1's
+1641-tick miss was the 100-deep command queue backing up at 10 Hz streaming
+(fixed: stream at the ~0.3 s consumption rate). Color fingerprint
+reproduced exactly (768→768) and spans 734-768 across ±90°; sonar 75 cm
+constant; kinect blob re-centered (x=335). Raw:
+[sources/2026-10-25-swing90-run.md](sources/2026-10-25-swing90-run.md).
+Queue-staleness noted on koc-v2-motord-driver; koc-swing90-sweep closed.
+
 ## [2026-10-25] progress | Turret centered (landmark reproduces); tilt diagnostic; accel bug cracked
 
 Centering run: the blob re-centered at encoder **271-275** (right approach)
