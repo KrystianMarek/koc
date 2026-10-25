@@ -59,7 +59,7 @@ class TelemetryClient(QtCore.QThread):
         self._heartbeat_client.start()
 
     def on_telemetry_packet(self, packet: TelemetryPacket):
-        self.telemetry_packet_signal = packet
+        self.telemetry_packet_signal.emit(packet)
 
     def run(self):
         self.launch_heartbeat_client()
@@ -109,4 +109,3 @@ class TelemetryClient(QtCore.QThread):
         self._heartbeat_client.wait()
         subscriber.close()
         context.term()
-

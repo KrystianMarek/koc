@@ -80,10 +80,13 @@ class Config:
     # ==========================================================================
 
     # Raw depth range (11-bit sensor, 0-2047)
-    # Note: Raw values are DISPARITY (not distance) - see frame_processor.py
+    # Note: Raw values are DISPARITY (not distance) - see frame_processor.py.
+    # The conversion 0.1236*tan(raw/2842.5 + 1.1863) diverges at raw 1093
+    # (argument reaches pi/2): larger raw yields negative/absurd distances,
+    # so the valid ceiling is 1008 (0.42 m .. 4.0 m window used by probes).
     DEPTH_MAX = 2047
     DEPTH_MIN_VALID = _env_int('DEPTH_MIN_VALID', 300)   # Raw: filter too close
-    DEPTH_MAX_VALID = _env_int('DEPTH_MAX_VALID', 1800)  # Raw: filter too far
+    DEPTH_MAX_VALID = _env_int('DEPTH_MAX_VALID', 1008)  # Raw: tan domain limit
 
     # Metric depth range (after conversion from raw disparity)
     # Used for filtering valid points in point cloud generation
@@ -102,4 +105,3 @@ class Config:
 
     # Subsample stride (2 = every 2nd pixel, 4 = every 4th, etc.)
     POINTCLOUD_STRIDE = _env_int('POINTCLOUD_STRIDE', 2)
-
