@@ -62,6 +62,17 @@ constant; kinect blob re-centered (x=335). Raw:
 [sources/2026-10-25-swing90-run.md](sources/2026-10-25-swing90-run.md).
 Queue-staleness noted on koc-v2-motord-driver; koc-swing90-sweep closed.
 
+## [2026-10-25] progress | Drive odometry calibrated: 161.0 ± 0.2 ticks/cm
+
+The sonar written off (koc-hw-sonar-dead); the mission re-run on the kinect
+oracle with 20 cm encoder-driven legs — **three legs agree to 0.2%:
+161.0 ± 0.2 ticks/cm of travel**, the drivetrain backlash/slip under
+0.4 cm per 40 cm round trip, GoForward = toward the obstacle (the left
+encoder negative, the right positive). The kinect recovery waits (~16 s
+per measurement) covered the post-motion USB respawns with zero losses.
+Raw: [sources/2026-10-25-drive-ratio-run.md](sources/2026-10-25-drive-ratio-run.md)
+(v5 section). koc-drive-ratio-sweep closed with the results.
+
 ## [2026-10-25] progress | Turret centered (landmark reproduces); tilt diagnostic; accel bug cracked
 
 Centering run: the blob re-centered at encoder **271-275** (right approach)

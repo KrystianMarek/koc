@@ -42,7 +42,41 @@ obstacle is too close for a 15 cm forward excursion** (it would end at
 ~28-35 cm) — the robot needs to move back to ~75-80 cm from the obstacle
 before the mission re-runs.
 
-## Blocked on
+## SUCCESSFUL RUN (v5, kinect oracle, same day after the repositioning)
+
+The sonar written off (koc-hw-sonar-dead); the kinect depth as the sole
+oracle (+-1-3 mm at this range per the FrameProcessor docstring), with
+~16 s post-motion recovery waits per measurement. The robot repositioned:
+the obstacle ~0.77 m dead-ahead (kinect), GoForward drives TOWARD it.
+
+| Leg | Drive ticks | Kinect travel | Ticks/cm |
+|---|---|---|---|
+| rate blip (1500 ticks) | +1508 | 9.8 cm | 153.6 |
+| round 1 away / back | −3097 / +3072 | 19.2 / — | 161.3 / — |
+| round 2 away / back | −3074 / +3102 | 19.1 / — | 160.9 / — |
+| round 3 away / back | −3106 / +3090 | 19.3 / — | 160.9 / — |
+
+- **Ticks per cm of travel: 161.0 +- 0.2** (the three calibrated legs
+  agree to 0.2 percent; the blip's 153.6 is within the kinect's accuracy
+  band). THE odometry constant for v2's motord.
+- **Round-trip errors: +0.1 / -0.4 / -0.3 cm** — the drivetrain
+  backlash/slip is under half a centimeter per 40 cm round trip.
+- **Direction**: GoForward = toward the obstacle; the forward motion runs
+  the LEFT encoder negative and the RIGHT positive.
+- The kinect recovery waits (~16 s per measurement) fully covered the
+  post-motion USB respawn cycle - zero measurement losses in ~10 minutes.
+- The sign convention: the away legs' ticks are negative (GoBackward);
+  the magnitudes carry the calibration.
+
+## Drive gearing interpretation
+
+161 ticks/cm with a 360 ticks/rev motor: the effective wheel circumference
+per MOTOR rev = 360/161 = 2.24 cm. At a 17 cm effective sprocket/track
+diameter (53 cm circumference): the motor revs per wheel rev ~ 7.6:1. The
+true ratio needs the sprocket diameter measured (the user's task); every
+cm of sprocket diameter shifts it by ~0.5.
+
+## Blocked on (resolved by the successful run)
 
 - The user repositioning the robot (~75-80 cm obstacle distance, ≥40 cm
   clear behind) or confirming the current clearances.

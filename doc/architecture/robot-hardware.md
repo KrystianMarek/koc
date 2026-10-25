@@ -41,6 +41,13 @@ robot runs `server.py`; all client connections are inbound (5556/5559/5560).
 - **Depth encoding**: raw Kinect depth is *disparity* (0–2047); values >1023
   invalid; valid range observed 554–1023 for the desk scene. Display path:
   clip to 10 bits, `>> 2` (see `Config.DEPTH_DISPLAY_BITS`).
+- **Drive odometry (measured 2026-10-25)**: **161.0 ± 0.2 ticks per cm of
+  travel** (three 20 cm legs, kinect-oracle measured, 0.2% spread);
+  the drivetrain backlash/slip < 0.4 cm per 40 cm round trip; GoForward
+  runs the LEFT encoder negative and the RIGHT positive. The drive train
+  is geared ~6× deeper than the turret per speed unit (~1.16 ticks/s per
+  unit vs 7.2) — the robot moves at ~0.4 cm/s at speed 60. See
+  [drive ratio run](../sources/2026-10-25-drive-ratio-run.md).
 - **Two-axis camera aiming**: yaw = BrickPi turret (PORT_C, drivable via
   `TurretLeft/Right`, verified); pitch = **Kinect internal tilt motor**
   (±27°, accelerometer feedback, verified 2026-10-25 — see

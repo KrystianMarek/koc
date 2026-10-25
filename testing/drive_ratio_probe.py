@@ -1,24 +1,25 @@
 #!/usr/bin/env python3
 """
-Drive motor ratio probe v4 - run ON the robot (server up). THE ROBOT MOVES.
+Drive motor ratio probe v5 - run ON the robot (server up). THE ROBOT MOVES.
 
-Lessons learned (2026-10-25):
-- The sonar (chassis PORT_4) is blind WHILE the tracks turn (EMI/vibration)
-  but reads reliably AT REST -> the at-rest position oracle.
-- The kinect USB stream dies after robot motion and may not recover for
-  minutes -> the kinect is an OPTIONAL cross-check with a long wait, never
-  the control oracle.
-- The drive train is heavily geared: ~1.16 ticks/s per speed unit (vs the
-  turret's 7.2) -> all leg budgets use the drive rate.
+Oracle: the KINECT depth camera only. The sonar is dead (bd
+koc-hw-sonar-dead - the 20 y/o LEGO US sensor reads 255 constantly), and it
+was blind during motion anyway. The kinect blob distance is +-1-3 mm
+accurate at 0.5-1 m (per the FrameProcessor docstring) and reads during
+motion; the catch: the robot's vibration kills the kinect's USB stream for
+~13-16 s after each leg (the self-healing child's exit-respawn cycle), so
+every measurement waits out the recovery with retries.
 
-Mission: encoder-driven legs (drive a computed tick count blind, stop,
-measure at rest with the sonar). Round 1 is a short rate blip that
-calibrates ticks/cm; the later legs target 20 cm excursions (the user's
-clearance: 30 cm each way, 70 cm total cable envelope). The round-trip
-sonar delta = the drivetrain backlash/slip. The left/right deltas = curving.
+Mission: a rate-calibration blip (1500 ticks - auto-detects the drive
+direction), then N rounds of "20 cm away from the obstacle, 20 cm back"
+(encoder-driven legs from the calibrated ticks/cm). Per leg: the mean
+drive-encoder delta vs the kinect-measured displacement => ticks/cm; the
+round-trip distance error => the drivetrain backlash/slip; the left/right
+encoder split => curving.
 
-Safety: the sonar < 45 cm after any leg -> back off by the estimated ticks
-and abort; per-leg duration caps; deadman streaming; kill anytime.
+Safety: the kinect distance bound 0.45..1.30 m (outside = back off/abort),
+per-leg duration caps from the measured rate, deadman streaming, kill
+anytime. The obstacle sits ~0.8 m dead-ahead (user's geometry).
 
 Usage (on the robot):
     cd ~/rpi_lego_robot && ~/.virtualenvs/pi_robot3/bin/python \\
@@ -28,6 +29,7 @@ import csv
 import os
 import sys
 import time
+from collections import deque
 
 import numpy as np
 import zmq
@@ -36,16 +38,19 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.common.serialization import compress, decompress
 from app.networking import (
-    GoBackward, GoForward, HeartbeatRequest, TelemetryPacket, TurretReset)
+    GoBackward, GoForward, HeartbeatRequest, KinectPacket, TelemetryPacket,
+    TurretReset)
 
 ROUNDS = int(sys.argv[1]) if len(sys.argv) > 1 else 3
 SPEED = int(sys.argv[2]) if len(sys.argv) > 2 else 60
 STREAM_PERIOD = 0.3
-SETTLE_S = 3.5
-BLIP_TICKS = 1500        # the rate-calibration blip (~5-17 cm, unknown yet)
-TARGET_CM = 20.0         # the excursion per leg for the calibrated rounds
-SONAR_ABORT = 45         # cm - too close to the obstacle: back off + abort
-TICKS_PER_S_PER_UNIT = 1.16   # the measured drive rate (the broken-run data)
+BLIP_TICKS = 1500
+TARGET_CM = 20.0         # the excursion per calibrated leg
+DIST_MIN, DIST_MAX = 0.45, 1.30
+RECOVERY_S = 16.0        # the kinect USB respawn cycle after motion
+RETRY_S = 40.0           # the max wait for the first valid measurement
+TAN_SCALE, TAN_OFFSET, MULT = 2842.5, 1.1863, 0.1236
+VALID_MIN, VALID_MAX = 300, 1008
 OUT_DIR = "/tmp/koc_calib"
 
 push = None
@@ -66,7 +71,7 @@ def handshake(ctx):
     req.close()
 
 
-def pump(sub, seconds, log, stream=None):
+def pump(sub, seconds, log, frames, stream=None):
     end = time.time() + seconds
     next_send = 0.0
     while time.time() < end:
@@ -83,37 +88,56 @@ def pump(sub, seconds, log, stream=None):
             log.append((time.time(), packet.left_motor.angle,
                         packet.right_motor.angle, packet.color_sensor.raw,
                         packet.ultrasound_sensor.raw))
+        elif isinstance(packet, KinectPacket):
+            frames.append((time.time(), np.asarray(packet.get_depth())))
 
 
 def drive_mean(log):
     return (abs(log[-1][1]) + abs(log[-1][2])) / 2.0 if log else None
 
 
-def sonar_now(log):
-    return log[-1][4] if log else None
+def latest_depth(frames, after_t):
+    for t, f in reversed(frames):
+        if t >= after_t:
+            return f
+    return None
 
 
-def sonar_settled(sub, log, wait_s=6.0):
-    """Wait for the post-motion sonar recovery; return the settled reading."""
-    time.sleep(SETTLE_S)
-    vals = []
+def blob_distance(depth):
+    """(distance_m, blob_x) of the nearest-valid cluster, or (None, None)."""
+    valid = (depth >= VALID_MIN) & (depth <= VALID_MAX)
+    if not valid.any():
+        return None, None
+    vals = depth[valid]
+    thresh = np.percentile(vals, 10)
+    mask = valid & (depth <= thresh + 5)
+    ys, xs = np.nonzero(mask)
+    if len(xs) < 50:
+        return None, None
+    raw = float(np.median(depth[mask]))
+    return 0.1236 * np.tan(raw / TAN_SCALE + TAN_OFFSET), float(xs.mean())
+
+
+def wait_kinect_distance(sub, log, frames, max_wait=RETRY_S):
+    """Wait (pumping) until a valid blob distance is measurable.
+
+    Handles the post-motion USB respawn cycle (~16 s). Returns
+    (distance_m or None, measure_t).
+    """
     t0 = time.time()
-    while time.time() - t0 < wait_s:
-        pump(sub, 0.5, log)
-        s = sonar_now(log)
-        if s is not None and s != 255:
-            vals.append(s)
-        if len(vals) >= 3:
-            break
-    return float(np.median(vals)) if vals else None
+    while time.time() - t0 < max_wait:
+        mark = time.time()
+        pump(sub, 1.2, log, frames)
+        depth = latest_depth(frames, mark - 0.5)
+        if depth is not None:
+            dist, _ = blob_distance(depth)
+            if dist is not None:
+                return dist, time.time()
+    return None, time.time()
 
 
 def drive_ticks(sub, log, cmd, target_ticks, max_s):
-    """Encoder-driven leg (the mean of the two drive encoders).
-
-    Returns (achieved_mean_delta, reason or None); the reason is set on the
-    duration cap (a probable stall/limit).
-    """
+    """Encoder-driven leg (the mean of the two drive encoders)."""
     start = drive_mean(log)
     t_leg0 = time.time()
     next_send = 0.0
@@ -140,7 +164,6 @@ def drive_ticks(sub, log, cmd, target_ticks, max_s):
             achieved = drive_mean(log) - start
             return achieved, "duration cap (achieved {:.0f} of {:.0f})".format(
                 int(achieved), int(target_ticks))
-        time.sleep(0.005)
 
 
 def main():
@@ -158,90 +181,88 @@ def main():
     push = ctx.socket(zmq.PUSH)
     push.connect("tcp://127.0.0.1:5560")
 
+    frames = deque(maxlen=40)
     log = []
 
-    print("baseline 3 s at rest...")
-    pump(sub, 3.0, log)
-    s_base = sonar_settled(sub, log)
+    print("waiting for the first valid kinect distance (baseline)...")
+    d0, t_meas = wait_kinect_distance(sub, log, frames, RETRY_S + 20)
+    if d0 is None:
+        sys.exit("no valid kinect distance in {} s - is the camera healthy?"
+                 .format(RETRY_S + 20))
     e_start = (log[-1][1], log[-1][2])
-    print("baseline: sonar={} cm | encoders l={} r={}".format(
-        s_base, e_start[0], e_start[1]))
-    if s_base is None:
-        sys.exit("the sonar gives no reading at rest - check the sensor")
+    print("baseline: kinect dist {:.3f} m | encoders l={} r={}".format(
+        d0, e_start[0], e_start[1]))
 
-    # --- round 1: the rate blip ---
-    print("\nround 1: rate blip, {} ticks forward (blind, ~{:.0f} s)".format(
-        BLIP_TICKS, BLIP_TICKS / (TICKS_PER_S_PER_UNIT * SPEED)))
+    # --- round 0: the rate-calibration blip ---
+    print("\nround 0: rate blip, {} ticks (auto-detects the direction; "
+          "the kinect recovers ~{} s after)".format(
+              BLIP_TICKS, int(RECOVERY_S)))
     d_fwd, err = drive_ticks(sub, log, GoForward(SPEED), BLIP_TICKS,
-                             BLIP_TICKS / (TICKS_PER_S_PER_UNIT * SPEED) * 3)
-    s_after = sonar_settled(sub, log)
-    if s_after is None:
-        sys.exit("the sonar did not recover after the blip")
-    travel = s_base - s_after  # cm; positive = toward the obstacle
-    print("  blip: {:+.0f} ticks | sonar {} -> {} cm (travel {:+.1f} cm)"
-          .format(d_fwd, s_base, s_after, travel))
-    if abs(travel) < 2:
-        sys.exit("the robot did not measurably move - check the tracks and "
-                 "the geometry")
-    ticks_per_cm = abs(d_fwd) / abs(travel)
+                             BLIP_TICKS / 50.0 + 30)
+    print("  blip done: {:+.0f} ticks{}".format(
+        d_fwd, " ({})".format(err) if err else ""))
+    d1, t1 = wait_kinect_distance(sub, log, frames, RETRY_S + 20)
+    if d1 is None:
+        sys.exit("no kinect distance after the blip - the USB link never "
+                 "recovered")
+    travel = d0 - d1  # m; positive = toward the obstacle
+    print("  kinect dist {:.3f} -> {:.3f} m (travel {:+.2f} cm = {})".format(
+        d0, d1, travel * 100, "TOWARD" if travel > 0 else "AWAY"))
+    if abs(travel) < 0.02:
+        sys.exit("the robot did not measurably move ({:+.3f} m) - check "
+                 "the tracks and the geometry".format(travel))
+    ticks_per_cm = abs(d_fwd) / (abs(travel) * 100.0)
     print("  ticks/cm: {:.1f}".format(ticks_per_cm))
-    if travel < 0:
-        print("  NOTE: the blip moved AWAY from the obstacle - the forward/"
-              "backward roles are swapped for this robot's wiring")
 
     toward_cmd = GoForward(SPEED) if travel > 0 else GoBackward(SPEED)
     away_cmd = GoBackward(SPEED) if travel > 0 else GoForward(SPEED)
 
     # --- calibrated rounds: 20 cm out, 20 cm back ---
     rounds = []
-    s_ref = s_after
-    ticks_cm = ticks_per_cm
+    d_ref = d1
     for r in range(1, ROUNDS + 1):
-        target_ticks = int(min(TARGET_CM * ticks_cm, 8000))
-        max_s = target_ticks / (TICKS_PER_S_PER_UNIT * SPEED) * 2.5 + 10
-        print("\nround {}: {} {} ticks (~{:.0f} cm, cap {:.0f} s)".format(
-            r, "OUT" if travel > 0 else "BACK", int(target_ticks),
-            target_ticks / ticks_cm, max_s))
-        d_out, err_out = drive_ticks(sub, log, toward_cmd if travel > 0
-                                     else away_cmd, target_ticks, max_s)
-        s_out = sonar_settled(sub, log)
-        if s_out is None:
-            sys.exit("the sonar did not recover after the out leg")
-        travel_out = s_out - s_ref  # cm; + = away from the obstacle
-        print("  out: {:+.0f} ticks | sonar {} cm (delta {:+.1f} cm from "
-              "the reference)".format(d_out, s_out, travel_out))
-        if s_out < SONAR_ABORT:
-            print("  TOO CLOSE to the obstacle - backing off and aborting")
-            drive_ticks(sub, log, away_cmd if travel > 0 else toward_cmd,
-                        int(abs(s_out - SONAR_ABORT) * ticks_cm), max_s)
+        target_ticks = int(min(TARGET_CM * ticks_per_cm, 12000))
+        max_s = target_ticks / (60.0) * 2.5 + 20  # ~60 ticks/s at speed 60
+        print("\nround {}: AWAY {} ticks (cap {:.0f} s), then BACK".format(
+            r, int(target_ticks), max_s))
+
+        d_away, err_a = drive_ticks(sub, log, away_cmd, target_ticks, max_s)
+        d_a, t_a = wait_kinect_distance(sub, log, frames, RETRY_S + 20)
+        if d_a is None:
+            print("  ABORT: no kinect distance after the away leg")
+            break
+        print("  away: {:+.0f} ticks | dist {:.3f} m (travel {:+.1f} cm)"
+              .format(d_away, d_a, (d_a - d_ref) * 100))
+
+        d_back, err_b = drive_ticks(sub, log, toward_cmd, target_ticks,
+                                    max_s)
+        d_b, t_b = wait_kinect_distance(sub, log, frames, RETRY_S + 20)
+        if d_b is None:
+            print("  ABORT: no kinect distance after the back leg")
+            break
+        print("  back: {:+.0f} ticks | dist {:.3f} m (round-trip error "
+              "{:+.1f} cm)".format(d_back, d_b, (d_b - d_ref) * 100))
+
+        if d_b < DIST_MIN or d_b > DIST_MAX:
+            print("  ABORT: the final distance {:.2f} m is outside the "
+                  "safe band".format(d_b))
             break
 
-        d_back, err_back = drive_ticks(sub, log, away_cmd if travel > 0
-                                       else toward_cmd, target_ticks, max_s)
-        s_back = sonar_settled(sub, log)
-        if s_back is None:
-            sys.exit("the sonar did not recover after the back leg")
-        travel_back = s_back - s_ref
-        print("  back: {:+.0f} ticks | sonar {} cm (round-trip error "
-              "{:+.1f} cm)".format(d_back, s_back, travel_back))
-        if s_back < SONAR_ABORT:
-            print("  TOO CLOSE - aborting")
-            break
-
-        rounds.append({"round": r, "d_out": d_out, "d_back": d_back,
-                       "son_out": s_out, "son_back": s_back,
-                       "travel_out": travel_out, "err": travel_back,
-                       "tpc_out": abs(d_out) / abs(travel_out)
-                       if abs(travel_out) > 1 else None,
-                       "tpc_back": abs(d_back) / abs(travel_back)
-                       if abs(travel_back) > 1 else None})
-        s_ref = s_back
+        travel_a = abs(d_a - d_ref)
+        travel_b = abs(d_b - d_ref)
+        tpc_a = d_away / (travel_a * 100.0) if travel_a > 0.02 else None
+        tpc_b = d_back / (travel_b * 100.0) if travel_b > 0.02 else None
+        rounds.append({"round": r, "d_ref": d_ref, "d_a": d_a, "d_b": d_b,
+                       "d_away": d_away, "d_back": d_back,
+                       "tpc_away": tpc_a, "tpc_back": tpc_b,
+                       "err_cm": (d_b - d_ref) * 100})
+        d_ref = d_b
 
     # --- report ---
     print("\n=== DRIVE RATIO REPORT ===")
     print("rate blip: {} ticks / {:.1f} cm = {:.1f} ticks/cm".format(
-        int(abs(d_fwd)), abs(travel), ticks_per_cm))
-    tpcs = [x for r in rounds for x in (r["tpc_out"], r["tpc_back"]) if x]
+        int(abs(d_fwd)), abs(travel) * 100, ticks_per_cm))
+    tpcs = [x for r in rounds for x in (r["tpc_away"], r["tpc_back"]) if x]
     if tpcs:
         print("ticks per cm (calibrated legs): {} | median {:.1f}".format(
             ["{:.0f}".format(x) for x in tpcs], float(np.median(tpcs))))
@@ -250,20 +271,18 @@ def main():
               "{:.1f} motor revs per wheel rev at a 17 cm effective "
               "diameter".format(tpm, tpm * 0.17 / 360.0))
     else:
-        print("the calibrated legs did not yield ticks/cm (the travels were "
-              "within the sonar's 1 cm quantization)")
+        print("the calibrated legs did not yield ticks/cm (the kinect "
+              "displacement was under the 2 cm threshold)")
     if rounds:
-        errs = [r["err"] for r in rounds]
-        print("round-trip sonar errors (cm): {}".format(
-            ["{:+.1f}".format(x) for x in errs]))
-        pairs = [(r["d_out"], r["d_back"]) for r in rounds]
-        print("out/back tick pairs: {}".format(
-            ["{:.0f}/{:.0f}".format(a, b) for a, b in pairs]))
-        lr = []
-        print("NOTE: the left/right encoder split per leg is in the CSV "
-              "(a divergence = curving)")
+        print("round-trip errors (cm): {}".format(
+            ["{:+.1f}".format(r["err_cm"]) for r in rounds]))
+        print("away/back tick pairs: {}".format(
+            ["{:.0f}/{:.0f}".format(r["d_away"], r["d_back"])
+             for r in rounds]))
+        print("final kinect distance: {:.3f} m (start {:.3f})".format(
+            rounds[-1]["d_b"], d0))
 
-    csv_path = os.path.join(OUT_DIR, "drive_ratio_v4.csv")
+    csv_path = os.path.join(OUT_DIR, "drive_ratio_v5.csv")
     with open(csv_path, "w") as f:
         wr = csv.writer(f)
         wr.writerow(["t", "enc_left", "enc_right", "color", "sonar"])
