@@ -593,6 +593,37 @@ def main():
         print("rel: current C={}, delta {} -> target {}".format(c0, delta, c0 + delta))
         rotate_to(target=c0 + delta, burst_s=12.0)
         return
+    if mode == "burst":
+        secs = float(sys.argv[2]) if len(sys.argv) > 2 else 1.0
+        pct = int(sys.argv[3]) if len(sys.argv) > 3 else 32
+        stop_motord()
+        if not start_motord():
+            sys.exit("motord failed to start")
+        c0 = snap_encoders()["C"]
+        print("burst: start C={}, pct {} for {:.1f}s".format(c0, pct, secs))
+        go = [True]
+
+        def refresh():
+            while go[0]:
+                try:
+                    rpc("turret", json.dumps({"pct": pct}))
+                except Exception:
+                    pass
+                time.sleep(0.1)
+
+        thr = threading.Thread(target=refresh)
+        thr.start()
+        time.sleep(secs)
+        go[0] = False
+        thr.join()
+        rpc("turret", json.dumps({"pct": 0}))
+        time.sleep(0.8)
+        c1 = snap_encoders()["C"]
+        print("burst done: C={} (dC={} ticks = {:.1f} deg)".format(
+            c1, c1 - c0, (c1 - c0) / 125.0))
+        stop_motord()
+        print("motord stopped - robot idle")
+        return
     if mode in ("v1", "both"):
         if mode == "both" and motord_running():
             stop_motord()
