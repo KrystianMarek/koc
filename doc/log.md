@@ -62,6 +62,18 @@ constant; kinect blob re-centered (x=335). Raw:
 [sources/2026-10-25-swing90-run.md](sources/2026-10-25-swing90-run.md).
 Queue-staleness noted on koc-v2-motord-driver; koc-swing90-sweep closed.
 
+## [2026-10-25] incident | Turret cable wedged after parity tests; robot idle and safe
+
+The parity session wound the Kinect tether ~187° CW; the recovery attempts
+hit the stall in both directions (13-55 ticks/s vs ~600 free; the battery
+verified healthy at 8.872 V). The stall guard aborted; the motors float;
+the turret rests at encoder ~19771 (155° CW of camera-forward) awaiting
+physical cable freeing. Root causes + the v2 rules (the absolute envelope,
+the in-daemon stall detection, the dedicated refresh stream) captured in
+[sources/2026-10-25-turret-cable-incident.md](sources/2026-10-25-turret-cable-incident.md).
+The motion parity itself was PROVEN in the same session (the motord 602/s
+vs the v1 612/s at pwm 82; the v1 swing repeatability 6 ticks).
+
 ## [2026-10-25] progress | Phase 1 motord: read+motion parity with v1 oracle, deadman verified
 
 `robot/` Rust workspace (brickpi protocol crate + rpc + motord + robotctl,
