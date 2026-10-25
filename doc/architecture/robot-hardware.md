@@ -62,8 +62,17 @@ robot runs `server.py`; all client connections are inbound (5556/5559/5560).
 
 - OS: Raspbian 9 stretch, Python 3.5.3 — pins the codebase's compat choices
   (pickle protocol 4, no f-strings in server paths).
-- USB topology: Kinect hangs behind an NEC + Genesys hub chain — source of
-  libfreenect resync storms; a dedicated port is advisable.
+- USB topology + power: the Kinect sits on an NEC + Genesys hub chain
+  **because the chain provides power the RPi 3 port alone cannot** (user
+  constraint — a direct port is *not* an option). The chronic "Stream 70"
+  resync storms within minutes of streaming are the visible symptom of
+  (a) two hub hops in series, (b) the Kinect's ~25 MB/s wire load eating a
+  large share of the Pi's single shared 480 Mbps USB root bus (which also
+  carries Ethernet and the NCS), and (c) power sharing on the chain.
+  Mitigations: one quality *powered* hub instead of the daisy chain;
+  demand-driven capture in v2 `camerad` (stream only while a consumer
+  wants frames); self-healing worker for v1 (re-open device on sync
+  timeouts). See [kinect interface](kinect-interface.md).
 
 ## Intel NCS (USB accelerator)
 
