@@ -49,6 +49,13 @@ class BrickPiWrapper(Thread):
         self._brick_voltage = 0
         self._command_queue_grace = COMMAND_QUEUE_GRACE
 
+        # One SMBus for the wrapper's lifetime. The robot's smbus2 (0.2.1)
+        # has no context-manager support, so the previous per-call
+        # open/with pattern leaked one /dev/i2c-1 fd per read and exhausted
+        # the process limit in ~15-20 min, killing telemetry
+        # (bd koc-hw-kinect-wedge). Opened lazily; reopened on error.
+        self._voltage_bus = None
+
         # System stats
         self._system_stats = SystemStats()
         self._last_net_bytes_sent = 0
@@ -198,14 +205,18 @@ class BrickPiWrapper(Thread):
 
         # time.sleep(0.1) # Necessary?
         try:
-            # SMBUS 1 because we're using greater than V1. Closed immediately:
-            # a fresh SMBus per read without close() leaked one fd per call
-            # and exhausted the process limit after ~15-20 min, killing the
-            # wrapper thread and telemetry with it (bd koc-hw-kinect-wedge).
+            # SMBUS 1 because we're using greater than V1. One bus for the
+            # wrapper's lifetime: the robot's smbus2 0.2.1 has no context
+            # manager, so the previous per-call open/with leaked one
+            # /dev/i2c-1 fd per read and exhausted the process limit in
+            # ~15-20 min, killing the wrapper thread and telemetry with it
+            # (bd koc-hw-kinect-wedge). On any error the bus is dropped so
+            # the next call reopens fresh.
             address = 0x48
-            with smbus2.SMBus(1) as bus:
-                # the 0 command is mandatory for the protocol but not used in this chip.
-                data = bus.read_word_data(address, 0)
+            if self._voltage_bus is None:
+                self._voltage_bus = smbus2.SMBus(1)
+            # the 0 command is mandatory for the protocol but not used in this chip.
+            data = self._voltage_bus.read_word_data(address, 0)
 
             # from this data we need the last 4 bits and the first 6.
             last_4 = data & 0b1111 # using a bit mask
@@ -223,4 +234,5 @@ class BrickPiWrapper(Thread):
 
         except Exception as e:
             self._logger.exception(e)
+            self._voltage_bus = None  # reopen fresh on the next call
             return 0

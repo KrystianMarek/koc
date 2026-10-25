@@ -24,6 +24,19 @@ the child on SIGTERM (no more orphans on restart). User constraint recorded:
 the Kinect must stay on the powered hub chain (power source), so storms are
 mitigated by recovery, not relocation.
 
+## [2026-10-25] progress | Turret centered (landmark reproduces); tilt diagnostic; accel bug cracked
+
+Centering run: the blob re-centered at encoder **271-275** (right approach)
+vs **+527** (left approach, previous run) — **gear backlash ≈ 252 ticks ≈ 2°**
+measured; v2 homing must approach from one direction. Tilt diagnostic
+(standalone probe, server stopped): pivot −8.5° moved the obstacle's depth
+reading from raw 664 (0.79 m) to **579 (0.70 m)** — matching the sonar's
+75 cm; level reading returned identically after. **Accelerometer mystery
+cracked: mks is ~0 at all poses while the tilt angle tracks perfectly —
+the angle comes from the motor controller; the accel data path is
+dead/stubbed** (koc-hw-kinect-accel-axes re-diagnosed). Raw probe:
+`testing/turret_center_tilt_probe.py`, `testing/kinect_tilt_depth_probe.py`.
+
 ## [2026-10-25] progress | Homing landmark measured (encoder +527 / color 790); fd leak fixed
 
 First full homing sweep with sonar ground truth (75 cm obstacle dead-ahead):
