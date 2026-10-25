@@ -13,6 +13,17 @@ Timeline: `grep "^## \[" doc/log.md | head`.
 
 ---
 
+## [2026-10-25] progress | Self-healing kinect worker deployed and validated
+
+Child rewritten on the callback API (process_events loop) with a stall
+watchdog (10 s no-frames → os._exit → kernel releases camera+port) and
+latest-wins DONTWAIT pushes (63-85% CPU vs 139% sustained before); the
+server's reaper thread respawns it in ≤3 s — **validated by killing the
+child mid-stream** (spawn count 2, frames resumed). server.py now terminates
+the child on SIGTERM (no more orphans on restart). User constraint recorded:
+the Kinect must stay on the powered hub chain (power source), so storms are
+mitigated by recovery, not relocation.
+
 ## [2026-10-25] progress | Kinect wedge root-caused deeper; spawn+throttle deployed
 
 The wedge is a **chain**: (1) fork-inherited ZMQ fds (fixed: spawn context),

@@ -6,6 +6,8 @@ Runs on Raspberry Pi with BrickPi+ and Kinect.
 Accepts commands from clients and publishes telemetry/video.
 """
 import logging
+import os
+import signal
 from queue import Queue
 
 import zmq
@@ -72,6 +74,14 @@ def main():
         Config.BRICKPI_CLOCK
     )
     kinect_process = KinectProcess(Config.LOCALHOST, Config.KINECT_PORT)
+
+    # Reap the kinect child on termination so restarts never leave orphans
+    # holding the camera and the internal port (bd koc-hw-kinect-wedge).
+    def _terminate_kinect(signum, frame):
+        kinect_process.terminate()
+        os._exit(0)
+
+    signal.signal(signal.SIGTERM, _terminate_kinect)
     command_receiver = CommandReceiver(command_queue, Config.COMMAND_PORT)
     handshake_server = HandshakeServer(
         Config.HELLO_PORT,
