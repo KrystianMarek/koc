@@ -475,37 +475,45 @@ def return_to(target=297, speed_pct=32):
     print("oracle cross-check: C={} (delta {})".format(c_oracle, c_oracle - c_end))
 
 
-def cw_to(target=45297, speed_pct=32, burst_s=12.0):
-    """Rotate CW in `burst_s` bursts until the encoder reaches `target`.
+def rotate_to(target=297, speed_pct=32, burst_s=12.0):
+    """Rotate the turret to an absolute encoder position, direction auto.
 
-    45297 = 297 + 45000 = the original facing plus one full CW revolution.
-    Prints after each burst; interrupting the probe stops the turret within
-    400 ms (the intent expiry). Aborts if the rate collapses (<100 ticks/s
-    over a full burst - the cable-binding signature).
+    The direction follows the sign of (target - current), so the wrap
+    stays minimal: to return to the original facing use the original
+    position itself (297), NOT 297+45000 (that would wrap a full turn).
+
+    Stall guard: aborts if a full burst progresses <100 ticks/s (the
+    cable-binding signature). The final 2500 ticks run at pwm ~20 so the
+    coast lands within ~50 ticks of the target.
     """
     stop_motord()
     if not start_motord():
         sys.exit("motord failed to start")
     c0 = snap_encoders()["C"]
     remaining = target - c0
-    print("cw_to: start C={}, target {}, remaining {} ticks ({:.1f} deg)".format(
-        c0, target, remaining, remaining / 125.0))
-    if remaining <= 0:
-        print("already at/past target - no motion")
+    direction = 1 if remaining > 0 else -1
+    print("rotate_to: start C={}, target {}, remaining {} ticks "
+          "({:.1f} deg, direction {})".format(
+              c0, target, remaining, remaining / 125.0,
+              "CW" if direction > 0 else "CCW"))
+    if abs(remaining) < 150:
+        print("already at target - no motion")
         stop_motord()
         return
     leg = 0
     while True:
         leg += 1
         c_leg0 = snap_encoders()["C"]
-        if target - c_leg0 < 300:
+        gap = target - c_leg0
+        if abs(gap) < 300:
             break  # close enough; the coast lands it
+        pct = speed_pct if abs(gap) > 2500 else 10  # the gentle final approach
         go = [True]
 
         def refresh():
             while go[0]:
                 try:
-                    rpc("turret", json.dumps({"pct": speed_pct}))
+                    rpc("turret", json.dumps({"pct": pct * direction}))
                 except Exception:
                     pass
                 time.sleep(0.1)
@@ -516,7 +524,7 @@ def cw_to(target=45297, speed_pct=32, burst_s=12.0):
         early = False
         while time.time() - t0 < burst_s:
             time.sleep(0.1)
-            if target - snap_encoders()["C"] < 300:
+            if abs(target - snap_encoders()["C"]) < 300:
                 early = True
                 break
         go[0] = False
@@ -524,22 +532,22 @@ def cw_to(target=45297, speed_pct=32, burst_s=12.0):
         rpc("turret", json.dumps({"pct": 0}))
         time.sleep(0.6)
         c_now = snap_encoders()["C"]
-        rate = (c_now - c_leg0) / (time.time() - t0)
+        rate = abs(c_now - c_leg0) / (time.time() - t0)
         print("  burst {}: dC={} (now C={}, remaining {}, rate {:.0f} ticks/s)".format(
             leg, c_now - c_leg0, c_now, target - c_now, rate))
-        if early or target - c_now < 300:
+        if early or abs(target - c_now) < 300:
             break
         if rate < 100.0:
             print("  ABORT: rate collapsed - possible cable binding; robot idle")
             stop_motord()
             return
-        if time.time() - t0 > 0 and leg > 12:
+        if leg > 20:
             print("  ABORT: too many bursts")
             stop_motord()
             return
     time.sleep(0.8)
     c_end = snap_encoders()["C"]
-    print("cw_to done: C={} (target {}; error {} ticks = {:.2f} deg)".format(
+    print("rotate_to done: C={} (target {}; error {} ticks = {:.2f} deg)".format(
         c_end, target, c_end - target, (c_end - target) / 125.0))
     stop_motord()
     print("motord stopped - robot idle")
@@ -570,8 +578,20 @@ def main():
         return_to(tgt)
         return
     if mode == "cw":
-        secs = float(sys.argv[2]) if len(sys.argv) > 2 else 8.0
-        cw_to(target=297 + 45000, burst_s=secs)
+        secs = float(sys.argv[2]) if len(sys.argv) > 2 else 12.0
+        rotate_to(target=297 + 45000, burst_s=secs)
+        return
+    if mode == "rotate":
+        tgt = int(sys.argv[2]) if len(sys.argv) > 2 else 297
+        rotate_to(target=tgt, burst_s=12.0)
+        return
+    if mode == "rel":
+        delta = int(sys.argv[2]) if len(sys.argv) > 2 else 0
+        if not motord_running() and not start_motord():
+            sys.exit("motord failed to start")
+        c0 = snap_encoders()["C"]
+        print("rel: current C={}, delta {} -> target {}".format(c0, delta, c0 + delta))
+        rotate_to(target=c0 + delta, burst_s=12.0)
         return
     if mode in ("v1", "both"):
         if mode == "both" and motord_running():
