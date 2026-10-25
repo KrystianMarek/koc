@@ -1,0 +1,9 @@
+[package]
+name = "motord"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+brickpi = { path = "../brickpi" }
+rpc = { path = "../rpc" }
+libc = "0.2"

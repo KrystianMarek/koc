@@ -1,0 +1,9 @@
+[workspace]
+resolver = "2"
+members = ["brickpi", "rpc", "motord", "robotctl"]
+
+[profile.release]
+opt-level = 2
+lto = true
+codegen-units = 1
+panic = "abort"

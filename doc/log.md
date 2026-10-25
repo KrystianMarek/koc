@@ -62,6 +62,23 @@ constant; kinect blob re-centered (x=335). Raw:
 [sources/2026-10-25-swing90-run.md](sources/2026-10-25-swing90-run.md).
 Queue-staleness noted on koc-v2-motord-driver; koc-swing90-sweep closed.
 
+## [2026-10-25] progress | Phase 1 motord: read+motion parity with v1 oracle, deadman verified
+
+`robot/` Rust workspace (brickpi protocol crate + rpc + motord + robotctl,
+zero-dep except libc, built on the Pi in 2 min). The golden tests pin the
+framing/checksum/bit-packing to BrickPi.py's own logic. The differential
+probe (testing/motord_parity_probe.py) achieved **exact encoder parity**
+(A=-7500 B=0 C=297 D=8914 — bit-for-bit vs the oracle) after fixing a
+decode-order bug (the firmware sends ALL count fields, THEN all value
+fields — hand-decoding the raw dump proved it; the "encoder jump" was our
+bug, the robot never moved). Motion parity: the same PWM-51 twitch gives
+315 (motord) vs 289 (v1) ticks. The firmware deadman (TIMEOUT_SETTINGS,
+300 ms) verified: SIGKILL mid-drive → the motion stops within the window.
+The drive rate corrected to ~6-8 ticks/s per PWM unit (the old 1.16 was a
+units error; the v5 CSV + both twitches agree). Remaining in Phase 1: the
+turret parity, the estop drill, the turret homing intent, the probe-shim
+acceptance. bd koc-v2-motord-driver.
+
 ## [2026-10-25] decision | v2 implementation plan written; all six open questions resolved
 
 [doc/plans/2026-10-25-koc-v2-implementation.md](plans/2026-10-25-koc-v2-implementation.md):

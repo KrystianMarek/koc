@@ -44,10 +44,11 @@ robot runs `server.py`; all client connections are inbound (5556/5559/5560).
 - **Drive odometry (measured 2026-10-25)**: **161.0 ± 0.2 ticks per cm of
   travel** (three 20 cm legs, kinect-oracle measured, 0.2% spread);
   the drivetrain backlash/slip < 0.4 cm per 40 cm round trip; GoForward
-  runs the LEFT encoder negative and the RIGHT positive. The drive train
-  is geared ~6× deeper than the turret per speed unit (~1.16 ticks/s per
-  unit vs 7.2) — the robot moves at ~0.4 cm/s at speed 60. See
-  [drive ratio run](../sources/2026-10-25-drive-ratio-run.md).
+  runs the LEFT encoder negative and the RIGHT positive. The drive rate is
+  **~6-8 ticks/s per PWM unit** (v5 CSV ~470 ticks/s at PWM 60; the v1/motord
+  parity twitches ~290-315 at PWM 51 — the earlier "1.16 ticks/s per unit"
+  note was a units error, corrected 2026-10-25 during the motord parity).
+  See [drive ratio run](../sources/2026-10-25-drive-ratio-run.md).
 - **Two-axis camera aiming**: yaw = BrickPi turret (PORT_C, drivable via
   `TurretLeft/Right`, verified); pitch = **Kinect internal tilt motor**
   (±27°, accelerometer feedback, verified 2026-10-25 — see
