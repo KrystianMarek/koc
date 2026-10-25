@@ -13,6 +13,18 @@ Timeline: `grep "^## \[" doc/log.md | head`.
 
 ---
 
+## [2026-10-25] progress | Drive-ratio mission: track broke mid-run; re-diagnosed on the repositioned robot
+
+The first drive-ratio run ended with a **broken rear track** (the sonar went
+blind 6 s into motion, the backward leg jammed) — all run-1 data invalid,
+retracted. Valid findings: the drive train is geared ~6x deeper than the
+turret (~1.16 ticks/s per speed unit vs 7.2); the sonar is blind WHILE the
+tracks turn (EMI/vibration) and only works at rest; the kinect depth reads
+fine during motion. After the repair + repositioning: the obstacle now at
+43 cm (sonar) / 0.50 m (kinect) — too close for the planned excursions.
+**Mission blocked on the user repositioning the robot** to ~75-80 cm.
+Raw: [sources/2026-10-25-drive-ratio-run.md](sources/2026-10-25-drive-ratio-run.md).
+
 ## [2026-10-25] progress | Self-healing kinect worker deployed and validated
 
 Child rewritten on the callback API (process_events loop) with a stall
