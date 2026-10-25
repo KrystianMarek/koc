@@ -16,6 +16,7 @@ This directory contains implementation plans, feature roadmaps, and design docum
 | [adopt.sh](2026-04-17-adopt-script.md) | Automate template adoption | Parked | 2026-04-17 |
 | [LLM Wiki migration](2026-07-10-llm-wiki-migration.md) | Turn `doc/` into a development-focused LLM Wiki | Planning | 2026-07-10 |
 | [Log, external/, hygiene](2026-09-28-log-external-hygiene.md) | Conflict-free one-line log, `external/` scaffold, repo hygiene duty | Planning | 2026-09-28 |
+| [K.O.C v2 implementation](2026-10-25-koc-v2-implementation.md) | Microduck-aligned Rust daemon stack; all open questions resolved | Awaiting approval | 2026-10-25 |
 
 Status vocabulary: `Planning` → `Approved` → `Active` → `Complete` / `Superseded` / `Parked` / `Disabled`.
 

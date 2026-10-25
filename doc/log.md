@@ -62,6 +62,17 @@ constant; kinect blob re-centered (x=335). Raw:
 [sources/2026-10-25-swing90-run.md](sources/2026-10-25-swing90-run.md).
 Queue-staleness noted on koc-v2-motord-driver; koc-swing90-sweep closed.
 
+## [2026-10-25] decision | v2 implementation plan written; all six open questions resolved
+
+[doc/plans/2026-10-25-koc-v2-implementation.md](plans/2026-10-25-koc-v2-implementation.md):
+Rust motord (serialport-rs, firmware deadman, E_STOP-on-crash) + camerad
+(hand-rolled libfreenect FFI, demand-driven) + robotd WS gateway
+(JSON-RPC 2.0 on UDS locally, WebSocket remotely), Raspbian stretch stays
+for v2.0 (cross-compiled armv7), CPU INT8 perception, RL out of scope.
+Five phases, each gated by probe parity against the real robot; the
+measured constants (161 ticks/cm, 125 ticks/deg, the backlash) are the
+motord contract. Awaiting user approval before any v2 code (bd koc-v2-plan).
+
 ## [2026-10-25] progress | Drive odometry calibrated: 161.0 ± 0.2 ticks/cm
 
 The sonar written off (koc-hw-sonar-dead); the mission re-run on the kinect
