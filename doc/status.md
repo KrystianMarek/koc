@@ -15,11 +15,13 @@ _Last updated: 2026-10-26_
 
 ## Done recently
 
-- 2026-10-26: **drive odometry corrected to 166.6 ticks/cm** (was 161.0;
-  the probe missed the coast after each stop). The BrickPi counts 720 ticks
-  per motor revolution, so the track moves 4.32 cm per motor revolution,
-  consistent with 20:12 gearing on a 6-tooth sprocket. Sonar agrees at rest
-  — see [drive ratio re-run](sources/2026-10-26-drive-ratio-rerun.md).
+- 2026-10-26: **drive odometry corrected** (the first run missed the coast
+  after each stop), drive gearing inferred, and the encoder resolution
+  corrected (older pages assumed half of it). The values are in
+  [Measured constants](architecture/robot-hardware.md#measured-constants); sonar agrees at rest — see
+  [drive ratio re-run](sources/2026-10-26-drive-ratio-rerun.md).
+- 2026-10-26: gearing and odometry numbers consolidated into that one table;
+  other pages link to it.
 - 2026-10-26: **turret cable envelope**: the turret cannot turn more than
   180° either way from camera-forward. The v1 server and motord both enforce
   it from `~/.koc/turret.json` and lock the turret when its position is
@@ -30,11 +32,11 @@ _Last updated: 2026-10-26_
   and the cables are fine there (this is the envelope center).
 - 2026-10-26: AGENTS.md rewritten for this project; agent lessons collected
   in [development/agent-lessons.md](development/agent-lessons.md).
-- 2026-10-26: turret re-centered by Kinect; evidence for ~42000 ticks per
+- 2026-10-26: turret re-centered by Kinect; new evidence on turret ticks per
   turret turn — see [turret centering run](sources/2026-10-26-turret-centering-run.md).
 - 2026-10-25: motord Phase 1 parity vs BrickPi.py; turret cable incident
-  ([capture](sources/2026-10-25-turret-cable-incident.md)); drive odometry
-  161.0 ticks/cm.
+  ([capture](sources/2026-10-25-turret-cable-incident.md)); first drive
+  odometry run (since corrected).
 
 ## Robot state
 
@@ -44,10 +46,11 @@ at the start of the drive re-run.
 
 ## Next up
 
-- Count the drive sprocket and gear teeth to confirm 20:12 on a 6-tooth
-  sprocket; fix the drive-ratio probe's at-stop tick counting
+- Count the drive sprocket and gear teeth to confirm the inferred drive
+  gearing; fix the drive-ratio probe's at-stop tick counting
   (`koc-drive-ratio-probe-coast`).
-- Confirm the turret ratio (~116.7 vs 125 ticks/°) with an independent
+- Confirm turret ticks per degree (two estimates in
+  [Measured constants](architecture/robot-hardware.md#measured-constants)) with an independent
   measurement before any absolute-position targets.
 - `koc-v2-turret-homing`: a homing landmark would let a locked turret
   re-reference without a user check.

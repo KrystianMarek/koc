@@ -48,11 +48,14 @@ Cross-cutting invariants (from Microduck, non-negotiable):
 - **Never block the control loop on another daemon** — last-value-wins caches on both sides.
 - **Deadman at two layers** — the BrickPi firmware `TIMEOUT_SETTINGS` (hardware, set to ~3× the motord loop period) + motord's own intent expiry; motors float on daemon crash via Drop/panic hooks.
 
-## Measured constants contract (v2 must reproduce; sources in robot-hardware.md)
+## Measured constants contract (v2 must reproduce)
 
-- Drive odometry: **166.6 ± 1.1 ticks/cm** rest-to-rest (corrected 2026-10-26 from 161.0, which missed the ~100–150-tick coast after each stop; [re-run](../sources/2026-10-26-drive-ratio-rerun.md)); 720 encoder ticks per motor revolution; GoForward = LEFT encoder negative, RIGHT positive; drivetrain backlash < 0.4 cm per 40 cm round trip.
-- Turret: **~125 ticks/turret-degree (±10%)**; approach-direction backlash **~252 ticks** — homing must approach from one direction or model it. 2026-10-26 evidence points to **~116.7 ticks/° (one turn ≈ 42000 ticks)** — confirm before relying on absolute targets ([centering run](../sources/2026-10-26-turret-centering-run.md)).
-- Drive PWM→speed is non-linear: **~6–8 ticks/s per PWM unit** (the earlier "~1.16" was a units error, corrected 2026-10-25); calibrate a per-speed table, don't assume linearity.
+The values live in one place, the
+[Measured constants](../architecture/robot-hardware.md#measured-constants) table; v2 code and tests read them from there, not from this plan. The requirements they impose:
+
+- Odometry counts drive ticks from rest to rest (the tracks coast after a stop); GoForward = LEFT encoder negative, RIGHT positive.
+- Turret ticks per degree is unconfirmed: no absolute turret targets until it is, and homing must approach from one direction or model the backlash.
+- Drive PWM→speed is non-linear: calibrate a per-speed table, don't assume linearity.
 - Encoder state persists while the BrickPi is powered — never assume 0 after a daemon restart.
 - Sonar: PORT_4 **works at rest** (61 cm on 2026-10-26; `koc-hw-sonar-dead` closed — the earlier 255s were aim/range). It read during motion on the 2026-10-26 drive re-run (an earlier run saw 255 while the tracks turned), within ~1 cm of the Kinect at rest, and lost the echo beyond ~62 cm. motord implements the I2C workaround; nothing in the control path may *depend* on sonar data.
 - Kinect USB chain: post-motion respawn takes ~13–16 s — camerad's self-heal budget and every probe must tolerate it; the two-hub power chain stays until physically replaced.

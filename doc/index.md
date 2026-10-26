@@ -25,14 +25,14 @@ Status: ✅ live · 🚧 stub / planned
 | [sources/2026-10-24-robot-state-capture.md](sources/2026-10-24-robot-state-capture.md) | SSH surveys + probe transcripts from the live robot |
 | [sources/2026-10-24-hardware-libs-capture.md](sources/2026-10-24-hardware-libs-capture.md) | BrickPi UART protocol + libfreenect API facts, upstream repo status |
 | [sources/2026-10-24-ncs-state.md](sources/2026-10-24-ncs-state.md) | Intel NCS (USB accelerator) state on the robot + ecosystem status |
-| [sources/2026-10-25-turret-calibration.md](sources/2026-10-25-turret-calibration.md) | Turret gear ratio (~125 ticks/°, ±10 %) + color homing mark |
+| [sources/2026-10-25-turret-calibration.md](sources/2026-10-25-turret-calibration.md) | First turret ticks-per-degree estimate (~125, ±10 %) + color homing mark |
 | [sources/2026-10-25-turret-homing-run.md](sources/2026-10-25-turret-homing-run.md) | First homing sweep: sonar + Kinect + color landmark pair |
 | [sources/2026-10-25-swing90-run.md](sources/2026-10-25-swing90-run.md) | 90/180/90 turret swing reliability run |
-| [sources/2026-10-25-drive-ratio-run.md](sources/2026-10-25-drive-ratio-run.md) | Drive odometry first run: 161.0 ticks/cm (at-stop counting, superseded) |
+| [sources/2026-10-25-drive-ratio-run.md](sources/2026-10-25-drive-ratio-run.md) | First drive odometry run (counted at the stop command; superseded) |
 | [sources/2026-10-25-turret-cable-incident.md](sources/2026-10-25-turret-cable-incident.md) | Turret cable wrap incident + v2 turret rules |
-| [sources/2026-10-26-turret-centering-run.md](sources/2026-10-26-turret-centering-run.md) | Turret re-centered by Kinect (C≈42298); motord lock starvation fixed; ~116.7 ticks/° |
+| [sources/2026-10-26-turret-centering-run.md](sources/2026-10-26-turret-centering-run.md) | Turret re-centered by Kinect (C≈42298); motord lock starvation fixed; second turret ticks-per-degree estimate |
 | [sources/2026-10-26-turret-envelope-run.md](sources/2026-10-26-turret-envelope-run.md) | ±180° envelope live checks: locks, limit stops and overshoot per writer |
-| [sources/2026-10-26-drive-ratio-rerun.md](sources/2026-10-26-drive-ratio-rerun.md) | Drive odometry corrected to 166.6 ticks/cm; sonar cross-check; 20:12 drive gearing inferred |
+| [sources/2026-10-26-drive-ratio-rerun.md](sources/2026-10-26-drive-ratio-rerun.md) | Drive odometry re-run rest to rest; sonar cross-check; drive gearing inferred |
 | [guidance/](guidance/README.md) | External expert consultations (requests + responses) |
 | [inbox/](inbox/README.md) | Untriaged incoming feature requests |
 
@@ -41,7 +41,7 @@ Status: ✅ live · 🚧 stub / planned
 | Area | Summary |
 |---|---|
 | [architecture/](architecture/README.md) | System design, component / concept pages |
-| [architecture/robot-hardware.md](architecture/robot-hardware.md) | Physical robot: port map, Kinect/NCS, measured dynamics |
+| [architecture/robot-hardware.md](architecture/robot-hardware.md) | Physical robot: port map, **Measured constants** (single source for gearing, odometry, rates), Kinect/NCS |
 | [architecture/brickpi-interface.md](architecture/brickpi-interface.md) | BrickPi+ UART protocol + v2 driver strategy |
 | [architecture/kinect-interface.md](architecture/kinect-interface.md) | Kinect v1 / libfreenect stack + v2 capture strategy |
 | [decisions/](decisions/README.md) | Architecture Decision Records (ADRs) |

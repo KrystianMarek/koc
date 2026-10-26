@@ -10,6 +10,9 @@ from ~20-year-old LEGO Mindstorms parts. A Raspberry Pi 3 with a BrickPi+
 drives two tracks and a turret that carries an Xbox 360 Kinect. Start with
 [doc/overview.md](doc/overview.md); the hardware facts live in
 [doc/architecture/robot-hardware.md](doc/architecture/robot-hardware.md).
+Take encoder, gearing, odometry and rate numbers from its **Measured
+constants** table, and update that table (not other pages) when a
+measurement changes one.
 
 | Part | Where | Stack |
 |---|---|---|

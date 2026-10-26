@@ -28,8 +28,8 @@ the cable envelope in `~/.koc/turret.json` on the robot. Both motor writers
 - Moves go through `testing/motord_parity_probe.py rel <ticks>`: position-
   stopped, at most 15° per move, aborts on stall or stale position.
 - Turret sign: **positive ticks = turret left** (the user's CCW seen from
-  above); negative = right. About 116.7 ticks per degree (125 in older notes;
-  not independently confirmed), so prefer several small moves.
+  above); negative = right. Turret ticks per degree is not confirmed (see
+  [Measured constants](../architecture/robot-hardware.md#measured-constants)), so prefer several small moves.
 
 ## Prerequisites
 
@@ -84,7 +84,8 @@ $P testing/kinect_bearing.py <sonar_cm>
 Use the `RESULT:` line only when it is not marked untrusted. A positive
 bearing (obstacle right of image center) means the turret points left of the
 obstacle: move encoder-negative. The move is about
-`-bearing_deg * 116.7` ticks. The `SURFACE:` yaw is a second cue; both should
+`-bearing_deg × ticks_per_degree` ticks, with the working value from
+[Measured constants](../architecture/robot-hardware.md#measured-constants). The `SURFACE:` yaw is a second cue; both should
 agree within about 1°.
 
 ### Step 4: move
@@ -98,7 +99,8 @@ $P testing/motord_parity_probe.py rel <ticks>
 For moves over 15°, repeat in steps of at most 15° with a bearing check in
 between. Make the final approach from the same side each time (the
 2026-10-26 center was approached from the left, i.e. with an encoder-negative
-final move): gear backlash is a few hundred ticks.
+final move): see the turret backlash in
+[Measured constants](../architecture/robot-hardware.md#measured-constants).
 
 ### Step 5: repeat until centered
 

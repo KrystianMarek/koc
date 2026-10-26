@@ -25,6 +25,9 @@ The robot uses three NXT motors controlled via BrickPi+:
 - Speed values range from -255 to +255
 - The left and right motors are mounted in opposite orientations
 - Forward motion requires: left motor negative, right motor positive
+- Encoder resolution, gearing, odometry and rates:
+  [Measured constants](architecture/robot-hardware.md#measured-constants)
+  (the single source for these numbers)
 
 ## Sensor Configuration
 
@@ -166,4 +169,3 @@ These are installed automatically by `install_dependencies.sh`.
 1. Check BrickPi port connections
 2. Verify motor enable flags in code
 3. Test with BrickPi example scripts
-

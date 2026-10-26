@@ -10,7 +10,7 @@ Architecture documents for this project — components, data flow, trust model, 
 
 | Document | Description |
 |----------|-------------|
-| [robot-hardware.md](robot-hardware.md) | Physical robot: port map (A/D/C, sensors), Kinect + NCS, measured dynamics (encoder, deadman), USB topology |
+| [robot-hardware.md](robot-hardware.md) | Physical robot: port map (A/D/C, sensors), Kinect + NCS, Measured constants (single source for gearing, odometry, rates), deadman, USB topology |
 | [brickpi-interface.md](brickpi-interface.md) | BrickPi+ UART protocol (2× ATmega, framing, E-STOP + firmware deadman), v1 usage, Rust driver strategy |
 | [kinect-interface.md](kinect-interface.md) | Kinect v1 / libfreenect stack, C API surface, legacy status, v2 `camerad` strategy |
 

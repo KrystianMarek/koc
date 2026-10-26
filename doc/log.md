@@ -13,6 +13,21 @@ Timeline: `grep "^## \[" doc/log.md | head`.
 
 ---
 
+## [2026-10-26] lint | Gearing numbers consolidated into one Measured constants table
+
+Gearing, encoder, odometry and rate numbers were repeated on seven pages,
+with three turret ratios (116.7, 125, "125:1") and a stale drive odometry
+(161.0) in circulation. They now live only in the **Measured constants**
+table of [architecture/robot-hardware.md](architecture/robot-hardware.md#measured-constants),
+each row with its status (measured, derived, inferred, unconfirmed) and
+evidence. The v2 plan's constants contract, status, goals, the turret
+centering runbook, agent lessons, `doc/hardware.md` and AGENTS.md link to
+the table instead of restating values; index descriptions no longer quote
+them. Left as written: `log.md` and `sources/` (append-only/immutable) and
+the approved turret envelope plan (its 116.7/125 rationale is still
+right). Probe code that still assumes 360 ticks per revolution:
+`koc-probes-encoder-units`.
+
 ## [2026-10-26] ingest | Drive re-run: odometry 166.6 ticks/cm, 20:12 drive gearing inferred, sonar cross-check
 
 Re-ran `drive_ratio_probe.py` v5 (3 rounds, PWM 60) against a flat

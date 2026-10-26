@@ -24,16 +24,45 @@ robot runs `server.py`; all client connections are inbound (5556/5559/5560).
 | Kinect USB | Camera 045e:02ae, Motor 02b0, Audio 02ad — all enumerated; video 480×640×3 uint8, depth 480×640 uint16 |
 | Intel NCS (USB accelerator) | `03e7:2150` Myriad 2 — **boot mode**, firmware not loaded; partial NCSDK in `/opt/movidius` (no importable API, no udev rules); see [NCS state](../sources/2026-10-24-ncs-state.md) + [NCS support](../ncs-legacy-support.md) |
 
+## Measured constants
+
+**This table is the single source for encoder, gearing, odometry and rate
+numbers.** Other pages link here instead of repeating values; when a new
+measurement changes a value, update this row, file the raw capture in
+`doc/sources/`, and add a `log.md` entry. Sources dated before 2026-10-26
+assume 360 ticks per motor revolution and call ticks per degree a "ratio";
+read their raw tick counts, not their derived ratios.
+
+| Constant | Value | Status | Evidence |
+|---|---|---|---|
+| Encoder resolution | **720 ticks per motor revolution** (0.5° per tick) | BrickPi library fact | `testing/brickpi/LEGO-Encoder_Test.py` |
+| Drive odometry | **166.6 ± 1.1 ticks per cm** of travel, rest to rest | measured 2026-10-26 (six 19 cm legs) | [drive ratio re-run](../sources/2026-10-26-drive-ratio-rerun.md) |
+| Track travel per motor revolution | **4.32 cm** (720 / 166.6) | derived | same |
+| Drive gearing | **12-tooth driving 20-tooth (1.67:1)** into a 6-tooth sprocket on the 42055 track (12 mm pitch, 7.2 cm per sprocket revolution); predicts 166.7 ticks/cm | inferred from odometry and `pictures/`; teeth not counted | same |
+| Drive coast after a stop | ~100–150 ticks at PWM 60 | measured 2026-10-26 | same |
+| Drive left/right balance | forward: right encoder turns ~2 % more than left; backward: equal | measured 2026-10-26 | same |
+| Drive round-trip repeatability | < 0.6 cm per 38 cm out and back | measured 2026-10-26 | same |
+| Drive rate | ~6–8 ticks/s per PWM unit, non-linear (~470 ticks/s at PWM 60) | measured 2026-10-25 | [drive ratio run](../sources/2026-10-25-drive-ratio-run.md) |
+| Turret ticks per turret degree | **~116.7** working value (one turn ≈ 42000 ticks); the earlier optical estimate was 125 ± 10 % | **unconfirmed**: the two estimates differ by 7 % | [centering run](../sources/2026-10-26-turret-centering-run.md), [turret calibration](../sources/2026-10-25-turret-calibration.md) |
+| Turret reduction, motor : turret | **~58:1** (42000 / 720); 62.5:1 if 125 ticks/° | derived from the row above | — |
+| Turret gear backlash | ~252 ticks (~2°) between approach directions | measured 2026-10-25 | [log 2026-10-25](../log.md), [swing90 run](../sources/2026-10-25-swing90-run.md) |
+| Turret motor rate | ~510 ticks/s at PWM 80 (~42 motor rpm, ~4°/s at the turret) | measured 2026-10-24 | [state capture](../sources/2026-10-24-robot-state-capture.md) |
+| Turret envelope | `center` 42298, `half_range` 21000 ticks (guard rules under Internals) | configuration in `~/.koc/turret.json` | [envelope run](../sources/2026-10-26-turret-envelope-run.md) |
+| Sonar vs Kinect offset | sonar reads ~7 cm less than the Kinect blob distance | measured 2026-10-26 | [drive ratio re-run](../sources/2026-10-26-drive-ratio-rerun.md) |
+
 ## Internals (measured behavior)
 
-- **Encoder units**: the BrickPi counts **720 ticks per motor revolution**
-  (0.5° per tick; `testing/brickpi/LEGO-Encoder_Test.py`). Pages before
-  2026-10-26 assumed 360.
-- **Turret dynamics**: streamed
-  `TurretRight(80)` (PWM duty ≈31%) for 2 s → 1025 ticks ≈ **510 ticks/s ≈ 42 rpm**
-  at the motor shaft; actual turret rate is geared down from that. Direction:
-  `TurretRight` = negative encoder ticks; positive ticks = turret left
-  (the user's CCW seen from above).
+- **Drive train**: skid-steer on two 42055 tracks. Each NXT motor drives
+  one track through the gearing in the table. The motors are mounted
+  opposite: GoForward runs the left encoder negative and the right
+  positive, and equal commands spin the robot in place (TurnLeft = both
+  −v, TurnRight = both +v). Count drive ticks from rest to rest: the tracks
+  coast after a stop command. The 2026-10-25 odometry of 161.0 ticks/cm
+  counted at the stop command and is superseded.
+- **Turret direction**: `TurretRight` = negative encoder ticks; positive
+  ticks = turret left (the user's CCW seen from above). Do not compute
+  "same facing" positions from a ticks-per-turn figure until the turret
+  ratio is confirmed; find camera-forward with the Kinect.
 - **Encoder persistence**: turret encoder value survived a full server restart
   (−122 before and after) — the BrickPi holds encoder state while powered;
   do not assume angle 0 after a reboot of `server.py`.
@@ -45,48 +74,15 @@ robot runs `server.py`; all client connections are inbound (5556/5559/5560).
 - **Depth encoding**: raw Kinect depth is *disparity* (0–2047); values >1023
   invalid; valid range observed 554–1023 for the desk scene. Display path:
   clip to 10 bits, `>> 2` (see `Config.DEPTH_DISPLAY_BITS`).
-- **Drive odometry (measured 2026-10-26)**: **166.6 ± 1.1 ticks per cm of
-  travel**, rest-to-rest encoder deltas over six 19 cm Kinect-measured legs.
-  The 2026-10-25 value of 161.0 counted ticks at the stop command and missed
-  the ~100–150 ticks the tracks coast before stopping. Round-trip error
-  < 0.6 cm per 38 cm; GoForward runs the LEFT encoder negative and the RIGHT
-  positive, with the right turning ~2 % more than the left. The sonar agrees
-  at rest (10 cm vs 9.9 cm on a 10 cm move), sits ~7 cm behind the Kinect
-  reading, and loses the echo beyond ~62 cm on that obstacle. See
-  [drive ratio re-run](../sources/2026-10-26-drive-ratio-rerun.md).
-- **Drive gearing (inferred 2026-10-26)**: 720 / 166.6 = **4.32 cm of track
-  per motor revolution**. With the 42055 track's 12 mm pitch on a 6-tooth
-  sprocket (7.2 cm per sprocket revolution) that is **1.67:1, a 12-tooth
-  driving a 20-tooth gear** (tan double-bevel gears visible on the front
-  cross axle in `pictures/`); predicted 166.7 ticks/cm. Tooth counts not yet
-  checked on the robot. Skid-steer: the motors are mounted opposite, so equal
-  commands spin the robot in place (TurnLeft = both −v, TurnRight = both +v).
-- **Drive rate**: **~6-8 ticks/s per PWM unit** (v5 CSV ~470 ticks/s at PWM 60; the v1/motord
-  parity twitches ~290-315 at PWM 51 — the earlier "1.16 ticks/s per unit"
-  note was a units error, corrected 2026-10-25 during the motord parity).
-  See the [drive ratio run](../sources/2026-10-25-drive-ratio-run.md).
 - **Two-axis camera aiming**: yaw = BrickPi turret (PORT_C, drivable via
   `TurretLeft/Right`, verified); pitch = **Kinect internal tilt motor**
   (±27°, accelerometer feedback, verified 2026-10-25 — see
   [kinect interface](kinect-interface.md)). V1 wires only the yaw; tilt is
   stubbed out end-to-end (no packet, `kinect_process.py` returns 0).
-- **Turret gearing**: **~125 ticks per turret degree** (measured
-  2026-10-25 via Kinect optical angle reference, ±10% — see
-  [turret calibration](../sources/2026-10-25-turret-calibration.md)).
-  **2026-10-26 evidence points lower: one full turn ≈ 42000 ticks
-  (≈116.7 ticks/°)**, from re-centering by Kinect at C≈42298 vs the
-  session-start spot C=297 — see
-  [turret centering run](../sources/2026-10-26-turret-centering-run.md).
-  Do not compute "same facing" positions with 45000 ticks per turn.
-  At 720 ticks per motor revolution, 42000 ticks per turn is a **~58:1**
-  motor:turret reduction (older pages call 125 ticks/° "125:1"; that is
-  ticks per degree, not a gear ratio).
-  At speed 80 the turret pans ~4°/s. Position is tracked by the
-  cumulative encoder (persists while the BrickPi is powered).
 - **Turret cable envelope (2026-10-26)**: cables run through the turret and
   are neutral at camera-forward. **The turret never turns more than 180°
   either way from it.** Both motor writers enforce this from
-  `~/.koc/turret.json` (`center` 42298, `half_range` 21000 ticks): the
+  `~/.koc/turret.json` (values in [Measured constants](#measured-constants)): the
   v1 server via `app/server/turret_guard.py`, motord via
   `robot/motord/src/guard.rs`. Outward commands stop 800 ticks short of the
   limit (the v1 server coasts up to ~460 ticks past a stop at pwm 250). A
@@ -112,9 +108,11 @@ robot runs `server.py`; all client connections are inbound (5556/5559/5560).
   envelope center. The 2026-10-25 "cable stalls" were probe artifacts
   (intent refresh starved by slow snapshots), not binding — see
   [centering run](../sources/2026-10-26-turret-centering-run.md).
-- **Sonar (PORT_4)**: works at rest — 61 cm with an obstacle the Kinect puts
-  at 0.61–0.67 m (2026-10-26). Blind while the tracks turn. The 255 (no
-  echo) readings of 2026-10-25 were aim/range, not a dead sensor
+- **Sonar (PORT_4)**: works — 61 cm with an obstacle the Kinect puts at
+  0.61–0.67 m (2026-10-26). It read during motion on the 2026-10-26 drive
+  re-run (an earlier run saw 255 while the tracks turned), in 1 cm steps.
+  255 means no echo in its cone: on 2026-10-26 it lost a flat obstacle
+  beyond ~62 cm. The 2026-10-25 "dead" readings were aim/range
   (`koc-hw-sonar-dead` closed).
 - **fd-leak fixed**: `get_voltage()` leaked one SMBus fd per call →
   `Too many open files` killed the wrapper thread (~15-20 min) — the true
