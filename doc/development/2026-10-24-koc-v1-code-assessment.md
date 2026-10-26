@@ -20,7 +20,7 @@ client, threads for BrickPi/handshake/commands and a process for Kinect.
   `doc/` from the 2026-01 refactor.
 - The implicit deadman in `BrickPiWrapper` (zero speeds after ~3 empty cycles)
   is the right safety instinct, even though undocumented (surprised us in the
-  [turret test](2026-10-24-robot-state-capture.md)).
+  [turret test](../sources/2026-10-24-robot-state-capture.md)).
 
 ## Issues found
 

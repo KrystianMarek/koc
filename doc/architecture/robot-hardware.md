@@ -22,14 +22,15 @@ robot runs `server.py`; all client connections are inbound (5556/5559/5560).
 | BrickPi PORT_4 | ultrasonic sensor (continuous) |
 | BrickPi battery | 8.854 V measured (healthy); `dtparam=brickpi_battery=okay` |
 | Kinect USB | Camera 045e:02ae, Motor 02b0, Audio 02ad — all enumerated; video 480×640×3 uint8, depth 480×640 uint16 |
-| Intel NCS (USB accelerator) | `03e7:2150` Myriad 2 — **boot mode**, firmware not loaded; partial NCSDK in `/opt/movidius` (no importable API, no udev rules); see [NCS state](../sources/2026-10-24-ncs-state.md) + [NCS support](../development/ncs-legacy-support.md) |
+| Intel NCS (USB accelerator) | `03e7:2150` Myriad 2 — **boot mode**, firmware not loaded; partial NCSDK in `/opt/movidius` (no importable API, no udev rules); see [NCS state](../sources/2026-10-24-ncs-state.md) + [NCS support](../ncs-legacy-support.md) |
 
 ## Internals (measured behavior)
 
 - **Turret dynamics**: NXT encoder 360 ticks/motor-shaft-rev. Streamed
   `TurretRight(80)` (PWM duty ≈31%) for 2 s → 1025 ticks ≈ **510 ticks/s ≈ 85 rpm**
   at the motor shaft; actual turret rate is geared down from that. Direction:
-  `TurretRight` = negative encoder ticks.
+  `TurretRight` = negative encoder ticks; positive ticks = turret left
+  (the user's CCW seen from above).
 - **Encoder persistence**: turret encoder value survived a full server restart
   (−122 before and after) — the BrickPi holds encoder state while powered;
   do not assume angle 0 after a reboot of `server.py`.
@@ -75,6 +76,16 @@ robot runs `server.py`; all client connections are inbound (5556/5559/5560).
   blob centered at **encoder ≈ +527, color ≈ 790** — the first measured
   homing landmark pair. See
   [turret homing run](../sources/2026-10-25-turret-homing-run.md).
+- **Camera-forward reference (2026-10-26)**: **C≈42298** on the front
+  obstacle, approached from the left (Kinect bearing +0.10°). Cable wrap is
+  about one turn relative to C=297; unwinding needs a 360° move (user
+  approval). The 2026-10-25 "cable stalls" were probe artifacts (intent
+  refresh starved by slow snapshots), not binding — see
+  [centering run](../sources/2026-10-26-turret-centering-run.md).
+- **Sonar (PORT_4)**: works at rest — 61 cm with an obstacle the Kinect puts
+  at 0.61–0.67 m (2026-10-26). Blind while the tracks turn. The 255 (no
+  echo) readings of 2026-10-25 were aim/range, not a dead sensor
+  (`koc-hw-sonar-dead` closed).
 - **fd-leak fixed**: `get_voltage()` leaked one SMBus fd per call →
   `Too many open files` killed the wrapper thread (~15-20 min) — the true
   "telemetry death" root cause. Now closed per read (bd
@@ -108,7 +119,7 @@ onboard NPU running `duck-detect`. State as of 2026-10-24:
   armv7l/x86_64) but **no importable `mvnc` API, no udev rules, no libmvnc
   runtime wired up** — nothing loads the firmware today.
 - The NCSDK tarballs in `~` are junk (an S3 error XML saved as a .tar.gz);
-  the working mirror documented in [NCS support](../development/ncs-legacy-support.md)
+  the working mirror documented in [NCS support](../ncs-legacy-support.md)
   is the sanctioned path.
 - Ecosystem: NCSDK archived 2019; OpenVINO never supported NCS1; Coral Edge
   TPU EOL 2026; Hailo needs PCIe. **CPU INT8 inference is the only
@@ -135,5 +146,6 @@ Raw evidence: [2026-10-24 NCS state](../sources/2026-10-24-ncs-state.md).
 ## References
 
 - [2026-10-24 robot state capture](../sources/2026-10-24-robot-state-capture.md) (raw data)
-- `testing/kinect_stream_probe.py`, `testing/turret_rotate_probe.py` (measurement tools)
-- [Architecture overview](README.md) · [Networking](../networking) — port map
+- `testing/kinect_stream_probe.py`, `testing/turret_rotate_probe.py` (v1 measurement tools)
+- `testing/motord_parity_probe.py` (motord parity + turret moves), `testing/kinect_bearing.py` (obstacle bearing)
+- [Architecture overview](README.md) · [Networking](../networking.md) — port map

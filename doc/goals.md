@@ -16,10 +16,14 @@ change in [log.md](log.md).
 
 ## Current cycle (short horizon)
 
-- [ ] Commit the 2026-10-24 session (template adoption, casing fix, docs, probes) — working tree holds it all
-- [ ] Fix `koc-hw-kinect-wedge` (throttle capture + fork before ZMQ setup) and redeploy
-- [ ] Fix `koc-hw-sync-target` (target dir + excludes)
-- [ ] Decide the v2 open questions (BrickPi driver strategy, capture sidecar, client↔robot transport, OS path) and write the v2 implementation plan in `doc/plans/` — user approval required before coding
+- [ ] Finish Phase 1 (`koc-v2-motord-driver`): homing intent
+      (`koc-v2-turret-homing`), in-daemon cable envelope + stall detection,
+      probe-shim acceptance
+- [ ] Confirm the turret ratio (~116.7 vs 125 ticks/°) with an independent
+      measurement before using absolute turret targets
+- [ ] Decide whether to unwind the ~one-turn turret cable wrap (a 360° move —
+      user approval required)
+- [ ] `koc-hw-kinect-wedge`: Stream-70 storms persist on the two-hub chain
 
 ## Achieved
 
@@ -27,7 +31,14 @@ change in [log.md](log.md).
 - 2026-10-24: live robot surveyed; Kinect stream verified end-to-end; turret
   rotation measured (deadman + streaming dynamics documented)
 - 2026-10-24: v1 code assessment; bugs `koc-hw-kinect-wedge`,
-  `koc-hw-sync-target` filed; `app/Networking` casing fixed locally
+  `koc-hw-sync-target` filed; `app/Networking` casing fixed and committed
+- 2026-10-25: `sync.sh` fixed (`koc-hw-sync-target` closed); Kinect wedge
+  mitigations deployed; drive odometry 161.0 ticks/cm; turret ratio and
+  homing landmarks measured
+- 2026-10-25: [v2 implementation plan](plans/2026-10-25-koc-v2-implementation.md)
+  approved; Phase 1 `motord` reached read/motion parity with `BrickPi.py`
+- 2026-10-26: turret re-centered by Kinect; `motord` snapshot starvation
+  fixed; sonar confirmed working ([centering run](sources/2026-10-26-turret-centering-run.md))
 
 ## Related
 

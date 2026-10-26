@@ -31,6 +31,11 @@ See [AGENTS.md → Project as an LLM Wiki](../../AGENTS.md#project-as-an-llm-wik
 | [2026-10-24-robot-state-capture.md](2026-10-24-robot-state-capture.md) | SSH surveys + probe transcripts from live robot 192.168.10.187 | 2026-10-24 | ✅ |
 | [2026-10-24-hardware-libs-capture.md](2026-10-24-hardware-libs-capture.md) | BrickPi UART protocol + libfreenect API facts, upstream repo status | 2026-10-24 | ✅ |
 | [2026-10-24-ncs-state.md](2026-10-24-ncs-state.md) | Intel NCS (USB accelerator) state on the robot + ecosystem status | 2026-10-24 | ✅ |
+| [2026-10-25-turret-calibration.md](2026-10-25-turret-calibration.md) | Turret gear ratio (~125 ticks/°) via Kinect optical reference; color homing mark | 2026-10-25 | ✅ |
+| [2026-10-25-turret-homing-run.md](2026-10-25-turret-homing-run.md) | First homing sweep: sonar + Kinect + color landmark pair | 2026-10-25 | ✅ |
+| [2026-10-25-swing90-run.md](2026-10-25-swing90-run.md) | 90/180/90 turret swing reliability (encoder, color, Kinect) | 2026-10-25 | ✅ |
+| [2026-10-25-drive-ratio-run.md](2026-10-25-drive-ratio-run.md) | Drive odometry mission: track break, repositioning, 161.0 ticks/cm | 2026-10-25 | ✅ |
+| [2026-10-25-turret-cable-incident.md](2026-10-25-turret-cable-incident.md) | Turret cable wrap during motord parity; rules for v2 | 2026-10-25 | ✅ |
 | [2026-10-26-turret-centering-run.md](2026-10-26-turret-centering-run.md) | Live turret re-centering: tooling defects, moves, Kinect readings, one-turn ≈ 42000 ticks | 2026-10-26 | ✅ |
 
 ## Related

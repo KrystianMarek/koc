@@ -74,6 +74,22 @@ protocol). No upstream fixes are coming — treat the protocol as frozen.
 
 ## V2 strategy (low-level)
 
+**Implemented 2026-10-25/26** in `robot/` (`brickpi` protocol crate with
+golden-frame tests, `motord`, `rpc`, `robotctl`):
+
+- Zero-dependency (std + libc) instead of `serialport-rs`: termios is set
+  directly (`B500000` = `0x1005` on Linux), 60 Hz VALUES loop, intents with
+  400 ms expiry, firmware deadman 300 ms, `E_STOP` on SIGINT/SIGTERM/panic.
+- Read parity with `BrickPi.py` is bit-exact; motion parity within ~9 %.
+- **VALUES response packing**: all 5-bit encoder count fields come first,
+  then all encoder values, then sensors (`BrickPiM` `EncodeValues`). The
+  first decoder interleaved them.
+- **Never hold the shared state lock across UART I/O or the loop sleep** —
+  doing so starved `snapshot` for 8–46 s under motion (fixed 2026-10-26,
+  [centering run](../sources/2026-10-26-turret-centering-run.md)).
+
+Original strategy:
+
 - **Rewrite the driver in Rust** (`motord`): `serialport-rs` (maintained,
   2026) at 500000 baud on `/dev/ttyS0`, speaking the framing above. The
   protocol is small: 5 message types, one checksummed frame per ATmega per

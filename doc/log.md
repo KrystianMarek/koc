@@ -13,6 +13,35 @@ Timeline: `grep "^## \[" doc/log.md | head`.
 
 ---
 
+## [2026-10-26] lint | Wiki health check after the turret centering session
+
+Overall: 🟡 Yellow → fixed to 🟢 except the items below
+- Freshness: `status.md` updated today; `goals.md` (stale since 2026-10-24) and
+  `development/robot-deployment.md` (pre-motord) rewritten.
+- Contradictions fixed: v2 plan constants (drive "1.16 ticks/s per unit" units
+  error → 6–8; sonar "dead" → works at rest; turret ratio caveat ~116.7);
+  vision page said motord uses I2C (it is UART); `brickpi-interface.md` now
+  records the libc implementation, VALUES packing order and the lock lesson.
+  Raw sources left untouched; the cable-incident "stall" reading is corrected
+  in `robot-hardware.md`.
+- Orphans: 5 development pages (v1-era TODO/guidance) now linked from
+  `development/README.md` and `index.md`.
+- Broken links: 11 found, all fixed — template leftovers (adopt.sh plans,
+  inbox row, `adopting-with-script.md`) removed or unlinked; wrong paths in
+  `overview.md`, `robot-hardware.md`, the v1 code assessment.
+- Index/log integrity: every `doc/` page is now in `index.md` (added the
+  2026-10-25 sources, the plans, the legacy v1 docs); sources README index
+  completed.
+- Ticket/wiki consistency: `koc-hw-sonar-dead` closed and reflected; centering
+  plan stays Active until the user's visual check.
+Next steps:
+1. AGENTS.md still carries the template's initialization checklist and empty
+   Project Overview / Development Conventions sections (user decision).
+2. Kinect-interface strategy now records the hand-rolled FFI decision; the
+   rest of that page gets a refresh when `camerad` starts.
+3. A turret-centering runbook would make the 2026-10-26 procedure repeatable
+   (not created — flag).
+
 ## [2026-10-26] progress | Turret re-centered by Kinect; motord snapshot starvation fixed
 
 An audit found the previous turret "home" (297+45000) was ~25° off and two

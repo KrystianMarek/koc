@@ -25,7 +25,7 @@ systemd-supervised), mapped onto our hardware:
 
 | Daemon | Owns | K.O.C mapping |
 |---|---|---|
-| `motord` | BrickPi I2C: motors PORT_A/D/C, sensors PORT_1/4, battery; 50–100 Hz loop; safety authority; deadman; intents in, encoder/sensor state out | replaces `BrickPiWrapper` |
+| `motord` | BrickPi+ UART (`/dev/ttyS0`): motors PORT_A/D/C, sensors PORT_1/4, battery; 50–100 Hz loop; safety authority; deadman; intents in, encoder/sensor state out | replaces `BrickPiWrapper` |
 | `camerad` | Kinect capture (libfreenect FFI), **throttled**, publishes frames + derived features; owns no motors | replaces `KinectProcess` |
 | `configd` | wifi/identity/pairing via NetworkManager; reachable when `motord` is dead | new |
 | `updaterd` | health-gated releases (start simple: systemd unit + git-tagged deploys; A/B later) | new |

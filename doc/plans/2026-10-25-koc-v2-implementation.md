@@ -21,6 +21,12 @@ the hardware facts are already decoded and measured (see
 | 5 | Perception accelerator | **CPU INT8 on the RPi 3 is the default**; accelerators behind a pluggable trait (`InferenceBackend`). The NCS1 stays dead; no new hardware purchase in v2.0 | NCS1 SDK archived, Coral EOL 2026, Hailo needs PCIe the RPi 3 lacks (see [NCS state](../sources/2026-10-24-ncs-state.md)) |
 | 6 | RL / learned policies | **Out of scope** | Differential-drive rover; Microduck's RL core solves a biped's problem we don't have. We adopt the software stack patterns |
 
+**Implementation notes (2026-10-26):** decision 1 was built with std + libc
+instead of `serialport-rs` (zero dependencies). Decision 4's "no toolchain
+on-device" did not hold: the workspace is built on the robot with rustup
+(~45 s incremental), which has been adequate so far. See
+[robot deployment](../development/robot-deployment.md).
+
 ## Architecture
 
 Robot-side Rust workspace (`robot/`), one binary per daemon, each speaking
@@ -45,10 +51,10 @@ Cross-cutting invariants (from Microduck, non-negotiable):
 ## Measured constants contract (v2 must reproduce; sources in robot-hardware.md)
 
 - Drive odometry: **161.0 ± 0.2 ticks/cm**; GoForward = LEFT encoder negative, RIGHT positive; drivetrain backlash < 0.4 cm per 40 cm round trip.
-- Turret: **~125 ticks/turret-degree (±10%)**; approach-direction backlash **~252 ticks** — homing must approach from one direction or model it.
-- Drive PWM→speed is non-linear and gear-deep: ~1.16 ticks/s per speed unit at speed 45-60; calibrate a per-speed table, don't assume linearity.
+- Turret: **~125 ticks/turret-degree (±10%)**; approach-direction backlash **~252 ticks** — homing must approach from one direction or model it. 2026-10-26 evidence points to **~116.7 ticks/° (one turn ≈ 42000 ticks)** — confirm before relying on absolute targets ([centering run](../sources/2026-10-26-turret-centering-run.md)).
+- Drive PWM→speed is non-linear: **~6–8 ticks/s per PWM unit** (the earlier "~1.16" was a units error, corrected 2026-10-25); calibrate a per-speed table, don't assume linearity.
 - Encoder state persists while the BrickPi is powered — never assume 0 after a daemon restart.
-- Sonar: PORT_4 presumed dead (20-year-old sensor, reads 255 constantly — bd `koc-hw-sonar-dead`); motord implements the I2C workaround anyway, but nothing may *depend* on sonar data.
+- Sonar: PORT_4 **works at rest** (61 cm on 2026-10-26; `koc-hw-sonar-dead` closed — the earlier 255s were aim/range) but is blind while the tracks turn. motord implements the I2C workaround; nothing in the control path may *depend* on sonar data.
 - Kinect USB chain: post-motion respawn takes ~13–16 s — camerad's self-heal budget and every probe must tolerate it; the two-hub power chain stays until physically replaced.
 
 ## Phases (each ends with probes passing against the real robot)
@@ -61,11 +67,11 @@ measured. v1 is healthy enough to serve as the test oracle.
 
 ### Phase 1 — `motord` + differential parity harness
 
-- [ ] Workspace skeleton: `robot/` cargo workspace, `motord` binary, shared `rpc` crate (NDJSON JSON-RPC over UDS), `robotctl` stub.
-- [ ] BrickPi protocol module: framing, checksum, the 5 message types; unit tests against golden frames captured from `BrickPi.py`.
-- [ ] Differential harness on the robot: v1 server and motord alternate the same scripted commands (twitch, rotate, sensor reads); assert encoder deltas agree within tolerance (the `differential-bootstrap` pattern; `BrickPi.py` is the oracle).
-- [ ] Firmware deadman enabled + verified (motors float when motord is SIGKILLed).
-- [ ] Intents implemented: drive (left/right %, or arc), turret_rotate, turret_home (color-landmark + approach-direction aware — closes `koc-v2-turret-homing`), estop, sensor snapshot.
+- [x] Workspace skeleton: `robot/` cargo workspace, `motord` binary, shared `rpc` crate (NDJSON JSON-RPC over UDS), `robotctl` stub.
+- [x] BrickPi protocol module: framing, checksum, the 5 message types; unit tests against golden frames captured from `BrickPi.py`.
+- [x] Differential harness on the robot (`testing/motord_parity_probe.py`; read parity bit-exact, motion within ~9 %): v1 server and motord alternate the same scripted commands (twitch, rotate, sensor reads); assert encoder deltas agree within tolerance (the `differential-bootstrap` pattern; `BrickPi.py` is the oracle).
+- [x] Firmware deadman enabled + verified (motors float when motord is SIGKILLed).
+- [ ] Intents implemented (drive, turret, estop, snapshot done; turret_home, cable envelope and stall detection pending): drive (left/right %, or arc), turret_rotate, turret_home (color-landmark + approach-direction aware — closes `koc-v2-turret-homing`), estop, sensor snapshot.
 - [ ] Acceptance: the existing probes (`turret_swing90_probe.py`, `drive_ratio_probe.py`) re-run against a motord-backed shim and reproduce their published constants.
 
 ### Phase 2 — `camerad`

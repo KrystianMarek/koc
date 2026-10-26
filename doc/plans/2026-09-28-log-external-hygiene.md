@@ -166,4 +166,4 @@ no local `.beads/` exists yet). Epic `tmpl-hygiene`.
 
 - [plans/README.md](README.md) · [status.md](../status.md) · [log.md](../log.md)
 - [runbooks/wiki-lint.md](../runbooks/wiki-lint.md)
-- [development/adopting-with-script.md](../development/adopting-with-script.md)
+- `development/adopting-with-script.md` (template-repo page; not in this repo)

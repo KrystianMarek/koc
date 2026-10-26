@@ -45,6 +45,20 @@ camera aiming**: yaw = turret servo, pitch = Kinect tilt. The LED doubles as
 the privacy indicator (Microduck's camera-LED pattern: visible whenever the
 picture leaves the robot).
 
+## Measuring bearing (verified 2026-10-26)
+
+- The depth image is **not mirrored**: x grows to the camera's right. A turret
+  step right (encoder-negative) moves the scene left in the image.
+- Bearing ≈ `atan((x − 320) / 585)`; the focal length 585 px is assumed,
+  not calibrated.
+- The centroid of the nearest pixels is unreliable — it jumps to frame-edge
+  artifacts. Use a per-column depth profile gated by the sonar range, take
+  the largest contiguous segment, reject segments that touch the frame edge,
+  and cross-check with the depth slope across a flat face (surface yaw).
+  Tool: `testing/kinect_bearing.py`; data:
+  [centering run](../sources/2026-10-26-turret-centering-run.md).
+- Through the v1 server the probe receives ~1.5–1.7 depth frames/s.
+
 ## The v1 stack
 
 - **libfreenect** (OpenKinect) — the only open driver for Kinect v1. Built
@@ -93,9 +107,9 @@ Orbbec/RealSense class sensor) without touching `motord`/clients.
 - **`camerad` in Rust with FFI to libfreenect**: callback-driven API +
   explicit `process_events_timeout` loop; **throttle to a fixed fps**
   (10–15) and latest-frame-wins semantics — fixes `koc-hw-kinect-wedge`.
-- Start from `external/libfreenect-rs` + `libfreenect-sys` (re-gen `-sys`
-  with current `bindgen`, modernize the safe layer) or bind our own minimal
-  subset (~15 functions above) — smaller than it looks.
+- **Decided (v2 plan, decision 2): bind our own minimal subset** (~15
+  functions above) by hand. The 2015-era `external/libfreenect-rs` +
+  `libfreenect-sys` remain a reference only.
 - **Publish features, not frames** where possible: the control path needs
   turret-relative geometry, not raw 600 KB frames; frames go only to the
   client stream (compressed, rate-limited).

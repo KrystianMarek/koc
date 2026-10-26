@@ -15,9 +15,12 @@ Movidius NCS.
   pickle transport, PyQt5 client. Deployed on the robot at
   `~/rpi_lego_robot` (see [deployment state](development/robot-deployment.md)).
 - **v2 (current focus)**: rebuild the software stack aligned with
-  [Microduck](../sources/2026-10-24-microduck-analysis.md) — Rust daemons,
+  [Microduck](sources/2026-10-24-microduck-analysis.md) — Rust daemons,
   JSON-RPC over Unix sockets, intents-not-motor-writes, throttled capture,
-  health-gated updates. Direction: [vision/v2-microduck-stack.md](vision/v2-microduck-stack.md).
+  health-gated updates. Direction: [vision/v2-microduck-stack.md](vision/v2-microduck-stack.md);
+  plan: [v2 implementation](plans/2026-10-25-koc-v2-implementation.md). Phase 1
+  (`motord`, Rust, in `robot/`) is built and running on the robot — see
+  [status](status.md).
 
 Hardware facts live in [architecture/robot-hardware.md](architecture/robot-hardware.md)
 (port map, measured turret dynamics, deadman behavior, USB topology).

@@ -25,6 +25,11 @@ Status: ✅ live · 🚧 stub / planned
 | [sources/2026-10-24-robot-state-capture.md](sources/2026-10-24-robot-state-capture.md) | SSH surveys + probe transcripts from the live robot |
 | [sources/2026-10-24-hardware-libs-capture.md](sources/2026-10-24-hardware-libs-capture.md) | BrickPi UART protocol + libfreenect API facts, upstream repo status |
 | [sources/2026-10-24-ncs-state.md](sources/2026-10-24-ncs-state.md) | Intel NCS (USB accelerator) state on the robot + ecosystem status |
+| [sources/2026-10-25-turret-calibration.md](sources/2026-10-25-turret-calibration.md) | Turret gear ratio (~125 ticks/°, ±10 %) + color homing mark |
+| [sources/2026-10-25-turret-homing-run.md](sources/2026-10-25-turret-homing-run.md) | First homing sweep: sonar + Kinect + color landmark pair |
+| [sources/2026-10-25-swing90-run.md](sources/2026-10-25-swing90-run.md) | 90/180/90 turret swing reliability run |
+| [sources/2026-10-25-drive-ratio-run.md](sources/2026-10-25-drive-ratio-run.md) | Drive odometry: 161.0 ± 0.2 ticks/cm |
+| [sources/2026-10-25-turret-cable-incident.md](sources/2026-10-25-turret-cable-incident.md) | Turret cable wrap incident + v2 turret rules |
 | [sources/2026-10-26-turret-centering-run.md](sources/2026-10-26-turret-centering-run.md) | Turret re-centered by Kinect (C≈42298); motord lock starvation fixed; ~116.7 ticks/° |
 | [guidance/](guidance/README.md) | External expert consultations (requests + responses) |
 | [inbox/](inbox/README.md) | Untriaged incoming feature requests |
@@ -44,11 +49,38 @@ Status: ✅ live · 🚧 stub / planned
 | [development/robot-deployment.md](development/robot-deployment.md) | Software state on the robot + known issues |
 | [development/2026-10-24-koc-v1-code-assessment.md](development/2026-10-24-koc-v1-code-assessment.md) | V1 codebase assessment — v2 baseline |
 
+## Legacy v1 reference docs
+
+Pre-wiki pages (December 2025 – January 2026). Still accurate for the v1
+stack unless a newer wiki page says otherwise.
+
+| Page | Summary |
+|---|---|
+| [architecture.md](architecture.md) | v1 client/server architecture over ZeroMQ |
+| [networking.md](networking.md) | v1 ZeroMQ + pickle protocol and packet formats |
+| [hardware.md](hardware.md) | Motor/sensor wiring and BrickPi configuration |
+| [raspberry-pi-setup.md](raspberry-pi-setup.md) | Raspberry Pi OS setup guide (uv-based; see robot-deployment for stretch) |
+| [ncs-legacy-support.md](ncs-legacy-support.md) | Intel Movidius NCS legacy support |
+| [development/project-structure.md](development/project-structure.md) | Code organization |
+| [development/refactor-networking.md](development/refactor-networking.md) | Networking refactor (completed Dec 2025) |
+| [development/todo-code-cleanup-refactor.md](development/todo-code-cleanup-refactor.md) | Code cleanup and naming refactor (completed) |
+| [development/todo-dependency-management.md](development/todo-dependency-management.md) | Dependency management refactor TODO |
+| [development/todo-gui-layout-refactor.md](development/todo-gui-layout-refactor.md) | GUI layout refactor TODO |
+| [development/todo-improvements.md](development/todo-improvements.md) | Future improvements backlog |
+| [development/architecture-improvements.md](development/architecture-improvements.md) | Preparatory refactoring proposals |
+| [development/todo-3d-scene-reconstruction.md](development/todo-3d-scene-reconstruction.md) | 3D scene reconstruction plan |
+| [development/guidance-request-3d-reconstruction.md](development/guidance-request-3d-reconstruction.md) | Guidance request: 3D reconstruction |
+| [development/guidance-3d-reconstruction.md](development/guidance-3d-reconstruction.md) | Guidance response: 3D reconstruction |
+| [development/guidance-request.md](development/guidance-request.md) | General technical guidance request |
+
 ## Execution & operations
 
 | Area | Summary |
 |---|---|
 | [plans/](plans/README.md) | Implementation plans and task tracking |
+| [plans/2026-10-25-koc-v2-implementation.md](plans/2026-10-25-koc-v2-implementation.md) | v2 Rust daemon stack plan (approved; Phase 1 in progress) |
+| [plans/2026-10-26-turret-centering-fixes.md](plans/2026-10-26-turret-centering-fixes.md) | Turret centering fixes (awaiting user visual check) |
+| [plans/2026-09-28-log-external-hygiene.md](plans/2026-09-28-log-external-hygiene.md) | Template-era hygiene plan (planning) |
 | [runbooks/](runbooks/README.md) | Operational procedures (incl. [wiki-lint](runbooks/wiki-lint.md)) |
 | [development/](development/README.md) | Developer guides, setup, post-mortems |
 | [benchmarks/](benchmarks/README.md) | E2E verification scenarios and benchmark runs |

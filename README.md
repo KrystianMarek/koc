@@ -69,6 +69,11 @@ Enter the robot's IP address and click **Connect**.
 
 See [Raspberry Pi Setup Guide](doc/raspberry-pi-setup.md) for detailed instructions.
 
+> The current robot runs Raspbian stretch, where the uv-based setup scripts do
+> not run; it uses pre-built virtualenvs instead — see
+> [robot deployment](doc/development/robot-deployment.md). The v2 Rust daemons
+> live in `robot/` ([v2 plan](doc/plans/2026-10-25-koc-v2-implementation.md)).
+
 ### Legacy Setup (Deprecated)
 
 The old `install_dependencies.sh` script is still available but deprecated.
@@ -116,6 +121,7 @@ See [Architecture Documentation](doc/architecture.md) for detailed design.
 
 | Document | Description |
 |----------|-------------|
+| [Wiki index](doc/index.md) | Entry point to all project documentation |
 | [Architecture](doc/architecture.md) | System design and data flow |
 | [Hardware](doc/hardware.md) | Wiring, sensors, and configuration |
 | [Networking](doc/networking.md) | Protocol and packet formats |
@@ -158,6 +164,7 @@ See [NCS Legacy Support](doc/ncs-legacy-support.md) for details.
 ## Resources
 
 ### Documentation
+
 - [PyQt5 Tutorial](http://zetcode.com/gui/pyqt5/)
 - [ZeroMQ Guide](http://zguide.zeromq.org/py:all)
 - [PyZMQ Docs](https://pyzmq.readthedocs.io)
