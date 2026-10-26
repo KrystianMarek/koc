@@ -2,7 +2,7 @@
 
 Master catalog of every page in this development-focused LLM Wiki. Read this
 first when answering a query, then drill into the relevant pages. Update it on
-every ingest (see [AGENTS.md → Project as an LLM Wiki](../AGENTS.md#project-as-an-llm-wiki)).
+every ingest (see [AGENTS.md → Documentation wiki](../AGENTS.md#documentation-wiki)).
 
 Status: ✅ live · 🚧 stub / planned
 
@@ -31,6 +31,7 @@ Status: ✅ live · 🚧 stub / planned
 | [sources/2026-10-25-drive-ratio-run.md](sources/2026-10-25-drive-ratio-run.md) | Drive odometry: 161.0 ± 0.2 ticks/cm |
 | [sources/2026-10-25-turret-cable-incident.md](sources/2026-10-25-turret-cable-incident.md) | Turret cable wrap incident + v2 turret rules |
 | [sources/2026-10-26-turret-centering-run.md](sources/2026-10-26-turret-centering-run.md) | Turret re-centered by Kinect (C≈42298); motord lock starvation fixed; ~116.7 ticks/° |
+| [sources/2026-10-26-turret-envelope-run.md](sources/2026-10-26-turret-envelope-run.md) | ±180° envelope live checks: locks, limit stops and overshoot per writer |
 | [guidance/](guidance/README.md) | External expert consultations (requests + responses) |
 | [inbox/](inbox/README.md) | Untriaged incoming feature requests |
 
@@ -47,6 +48,7 @@ Status: ✅ live · 🚧 stub / planned
 | [vision/](vision/README.md) | Exploratory product ideas and future concepts |
 | [vision/v2-microduck-stack.md](vision/v2-microduck-stack.md) | V2 direction: microduck-aligned Rust daemon stack on existing hardware |
 | [development/robot-deployment.md](development/robot-deployment.md) | Software state on the robot + known issues |
+| [development/agent-lessons.md](development/agent-lessons.md) | Rules agents learned on the live robot, each with its evidence |
 | [development/2026-10-24-koc-v1-code-assessment.md](development/2026-10-24-koc-v1-code-assessment.md) | V1 codebase assessment — v2 baseline |
 
 ## Legacy v1 reference docs
@@ -79,9 +81,12 @@ stack unless a newer wiki page says otherwise.
 |---|---|
 | [plans/](plans/README.md) | Implementation plans and task tracking |
 | [plans/2026-10-25-koc-v2-implementation.md](plans/2026-10-25-koc-v2-implementation.md) | v2 Rust daemon stack plan (approved; Phase 1 in progress) |
-| [plans/2026-10-26-turret-centering-fixes.md](plans/2026-10-26-turret-centering-fixes.md) | Turret centering fixes (awaiting user visual check) |
-| [plans/2026-09-28-log-external-hygiene.md](plans/2026-09-28-log-external-hygiene.md) | Template-era hygiene plan (planning) |
-| [runbooks/](runbooks/README.md) | Operational procedures (incl. [wiki-lint](runbooks/wiki-lint.md)) |
+| [plans/2026-10-26-turret-centering-fixes.md](plans/2026-10-26-turret-centering-fixes.md) | Turret centering fixes (complete; user confirmed facing) |
+| [plans/2026-10-26-turret-envelope.md](plans/2026-10-26-turret-envelope.md) | ±180° turret cable envelope in the v1 server and motord (complete) |
+| [plans/2026-09-28-log-external-hygiene.md](plans/2026-09-28-log-external-hygiene.md) | Plan written for the upstream template repo; not applicable here (parked) |
+| [runbooks/](runbooks/README.md) | Operational procedures |
+| [runbooks/turret-centering.md](runbooks/turret-centering.md) | Center the turret with the Kinect; re-reference / unlock the cable envelope |
+| [runbooks/wiki-lint.md](runbooks/wiki-lint.md) | Wiki health check |
 | [development/](development/README.md) | Developer guides, setup, post-mortems |
 | [benchmarks/](benchmarks/README.md) | E2E verification scenarios and benchmark runs |
 

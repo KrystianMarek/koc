@@ -99,5 +99,5 @@ frontmatter/link fixes you explicitly make. Revert via git if needed.
 
 ## Related
 
-- [AGENTS.md → Project as an LLM Wiki](../../AGENTS.md#project-as-an-llm-wiki)
+- [AGENTS.md → Documentation wiki](../../AGENTS.md#documentation-wiki)
 - [index.md](../index.md) · [log.md](../log.md) · [status.md](../status.md)

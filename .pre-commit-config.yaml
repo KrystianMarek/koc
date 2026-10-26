@@ -1,7 +1,3 @@
-# Keep this minimal and language-agnostic — this repo is a template.
-# Projects scaffolded from it should ADD language-specific linters
-# (ruff / golangci-lint / eslint / biome / etc.) appropriate to their stack.
-#
 # .beads/ is managed by the bd tool; don't enforce our style on its files
 # (it rewrites metadata.json without a trailing newline and ships its own
 # hook scripts, which fail our whitespace/shellcheck gates).

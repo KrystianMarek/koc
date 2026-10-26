@@ -32,7 +32,7 @@ Hardware facts live in [architecture/robot-hardware.md](architecture/robot-hardw
 
 This project's `doc/` tree is maintained as a development-focused LLM Wiki — a
 persistent, compounding, interlinked knowledge base that agents keep current.
-See [AGENTS.md → Project as an LLM Wiki](../AGENTS.md#project-as-an-llm-wiki).
+See [AGENTS.md → Documentation wiki](../AGENTS.md#documentation-wiki).
 
 ## Related
 

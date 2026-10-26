@@ -25,6 +25,8 @@ import time
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from app.server.turret_guard import TurretGuard, allowed_speed  # noqa: E402
+
 SOCK = "/tmp/motord.sock"
 MOTORD_BIN = os.path.expanduser(
     "~/rpi_lego_robot/robot/target/release/motord")
@@ -161,6 +163,24 @@ def motord_snapshots():
             res.get("color_raw"), res.get("sonar_raw"),
             res.get("errors"), res.get("loops")))
         time.sleep(0.05)
+    print("motord turret guard:", rpc("snapshot")["result"].get("turret_guard"))
+
+
+def turret_intent(pct):
+    """Send a turret intent; returns motord's error message when the cable
+    envelope guard rejects it, else None."""
+    r = rpc("turret", json.dumps({"pct": pct}))
+    return r["error"]["message"] if "error" in r else None
+
+
+def _v1_turret_step(BrickPi, guard, speed):
+    """One direct-BrickPi exchange with the turret speed filtered by the
+    cable envelope guard (the same rules as the v1 server and motord)."""
+    BrickPi.BrickPi.MotorSpeed[2] = guard.limit(BrickPi.BrickPi.Encoder[2], speed)
+    if BrickPi.BrickPiUpdateValues() == 0:
+        guard.observe(BrickPi.BrickPi.Encoder[2])
+    else:
+        guard.mark_stale()
 
 
 def v1_twitch(speed=51, seconds=1.0):
@@ -244,13 +264,13 @@ def v1_turret_twitch(speed=51, seconds=1.0):
     BrickPi.BrickPiSetup()
     BrickPi.BrickPi.MotorEnable[2] = 1
     BrickPi.BrickPiSetupSensors()
+    guard = TurretGuard()
+    _v1_turret_step(BrickPi, guard, 0)
     t0 = time.time()
     while time.time() - t0 < seconds:
-        BrickPi.BrickPi.MotorSpeed[2] = -speed
-        BrickPi.BrickPiUpdateValues()
+        _v1_turret_step(BrickPi, guard, -speed)
         time.sleep(0.05)
-    BrickPi.BrickPi.MotorSpeed[2] = 0
-    BrickPi.BrickPiUpdateValues()
+    _v1_turret_step(BrickPi, guard, 0)
 
 
 def snap_encoders():
@@ -316,8 +336,8 @@ def swing90_motord(ticks_per_deg=125.0, speed_pct=32, ccw_first=True):
 
     The turret intent is a velocity; the probe closes the position loop on
     MOTORD'S OWN SNAPSHOT encoder (the UART is motord's while it streams).
-    LEG ORDER MATTERS: pick the direction whose endpoints stay inside the
-    verified cable envelope [-10849, 11651] from the current position.
+    Start at camera-forward: each leg is 90 deg, and motord's cable
+    envelope guard stops any leg that would pass 180 deg from center.
     speed_pct must be >= ~31 (pwm 80): below the breakaway the turret
     near-stalls under the Kinect mass + cable drag (measured 2026-10-25:
     pwm 61 crawled at 14-55 ticks/s; pwm 51 twitch free-spinning gave 317).
@@ -346,7 +366,11 @@ def swing90_motord(ticks_per_deg=125.0, speed_pct=32, ccw_first=True):
             if time.time() - t0 > 60.0:
                 capped = True
                 break
-            rpc("turret", json.dumps({"pct": speed_pct * direction}))
+            blocked = turret_intent(speed_pct * direction)
+            if blocked:
+                print("  " + blocked)
+                capped = True
+                break
             time.sleep(0.1)
         rpc("turret", '{"pct":0}')
         c1 = snap_encoders()["C"]
@@ -376,8 +400,11 @@ def v1_swing90(ticks_per_deg=125.0, speed=82, ccw_first=True):
     BrickPi.BrickPi.SensorType = [
         BrickPi.TYPE_SENSOR_LIGHT_ON, 0, 0, BrickPi.TYPE_SENSOR_ULTRASONIC_CONT]
     BrickPi.BrickPiSetupSensors()
+    guard = TurretGuard()
     target = int(ticks_per_deg * 90)
-    BrickPi.BrickPiUpdateValues()
+    _v1_turret_step(BrickPi, guard, 0)
+    if guard.locked:
+        sys.exit("turret LOCKED: {}".format(guard.reason))
     c_start = BrickPi.BrickPi.Encoder[2]
     print("v1swing90: start C={}, target {} ticks/leg (pwm {})".format(
         c_start, target, speed))
@@ -386,26 +413,29 @@ def v1_swing90(ticks_per_deg=125.0, speed=82, ccw_first=True):
     else:
         legs = [(1, "leg1 CW 90"), (-1, "leg2 home"), (1, "leg3 CW 90"), (-1, "leg4 home")]
     for i, (direction, name) in enumerate(legs):
-        BrickPi.BrickPiUpdateValues()
+        _v1_turret_step(BrickPi, guard, 0)
         c0 = BrickPi.BrickPi.Encoder[2]
         t0 = time.time()
         capped = False
         while True:
-            BrickPi.BrickPi.MotorSpeed[2] = speed * direction
-            BrickPi.BrickPiUpdateValues()
+            _v1_turret_step(BrickPi, guard, speed * direction)
             c_now = BrickPi.BrickPi.Encoder[2]
             if abs(c_now - c0) >= target:
+                break
+            blocked = allowed_speed(guard.state, c_now, speed * direction)[1]
+            if blocked:
+                print("  envelope guard: " + blocked)
+                capped = True
                 break
             if time.time() - t0 > 60.0:
                 capped = True
                 break
-        BrickPi.BrickPi.MotorSpeed[2] = 0
-        BrickPi.BrickPiUpdateValues()
+        _v1_turret_step(BrickPi, guard, 0)
         c1 = BrickPi.BrickPi.Encoder[2]
         print("  {}: dC={} ({:.1f}s{})".format(
             name, c1 - c0, time.time() - t0, " CAP HIT" if capped else ""))
         time.sleep(0.5)
-    BrickPi.BrickPiUpdateValues()
+    _v1_turret_step(BrickPi, guard, 0)
     c_end = BrickPi.BrickPi.Encoder[2]
     print("v1swing90 repeatability: start C={}, end C={}, error={} ticks".format(
         c_start, c_end, c_end - c_start))
@@ -421,7 +451,10 @@ def turret_const(seconds=18.4, speed_pct=32):
     c0 = snap_encoders()
     t0 = time.time()
     while time.time() - t0 < seconds:
-        rpc("turret", json.dumps({"pct": speed_pct}))
+        blocked = turret_intent(speed_pct)
+        if blocked:
+            print(blocked)
+            break
         time.sleep(0.1)
     rpc("turret", '{"pct":0}')
     time.sleep(0.5)
@@ -432,73 +465,10 @@ def turret_const(seconds=18.4, speed_pct=32):
               c1["C"] - c0["C"], dt, (c1["C"] - c0["C"]) / dt, c1.get("errors")))
 
 
-def return_to(target=297, speed_pct=32):
-    """Rotate the turret back to an absolute encoder position.
-
-    The intent refresh runs in a dedicated 10 Hz thread (independent of the
-    position checks) - the swing90 crawl was the refresh cadence dropping
-    below the 400 ms expiry whenever a slow snapshot interleaved.
-    """
-    import threading
-
-    # Always restart fresh: a stale socket file masquerades as a running
-    # daemon, and two motord instances would fight over the UART.
-    stop_motord()
-    if not start_motord():
-        sys.exit("motord failed to start")
-    c0 = snap_encoders()["C"]
-    need = target - c0
-    direction = 1 if need > 0 else -1
-    print("return: from C={} to {} ({} ticks = {:.1f} deg, direction {})".format(
-        c0, target, need, need / 125.0, "CW" if direction > 0 else "CCW"))
-
-    go = [True]
-
-    def refresh():
-        while go[0]:
-            try:
-                rpc("turret", json.dumps({"pct": speed_pct * direction}))
-            except Exception:
-                pass
-            time.sleep(0.1)
-
-    thr = threading.Thread(target=refresh)
-    thr.start()
-    t0 = time.time()
-    capped = False
-    try:
-        while True:
-            c_now = snap_encoders()["C"]
-            remaining = target - c_now
-            if abs(remaining) < 150:
-                break  # on target; the coast adds ~100 ticks
-            if (remaining > 0) != (need > 0):
-                break  # overshot past the target
-            if time.time() - t0 > 180.0:
-                capped = True
-                break
-            # slow to ~pwm 20 for the final 2500 ticks (the overshoot shrinks)
-            if abs(remaining) < 2500 and speed_pct > 10:
-                speed_pct = 10
-            time.sleep(0.15)
-    finally:
-        go[0] = False
-        thr.join()
-        rpc("turret", '{"pct":0}')
-    time.sleep(0.8)
-    c_end = snap_encoders()["C"]
-    print("return done: C={} (target {}, error {} ticks = {:.2f} deg{})".format(
-        c_end, target, c_end - target, (c_end - target) / 125.0,
-        " CAP HIT" if capped else ""))
-    stop_motord()
-    c_oracle = _turret_encoder()
-    print("oracle cross-check: C={} (delta {})".format(c_oracle, c_oracle - c_end))
-
-
 TICKS_PER_DEG = 125.0
 
 
-def rotate_to(target=297, speed_pct=16, max_deg=15.0, coast_ticks=40):
+def rotate_to(target, speed_pct=16, max_deg=15.0, coast_ticks=40):
     """Rotate the turret to an absolute encoder position, stopping by position.
 
     Sign convention (user-confirmed): positive ticks = turret LEFT (user's
@@ -515,7 +485,12 @@ def rotate_to(target=297, speed_pct=16, max_deg=15.0, coast_ticks=40):
     stop_motord()
     if not start_motord():
         sys.exit("motord failed to start")
-    c0 = snap_encoders()["C"]
+    snap = rpc("snapshot")["result"]
+    if snap["turret_guard"]["locked"]:
+        print("REFUSED: turret LOCKED: {}".format(snap["turret_guard"]["reason"]))
+        stop_motord()
+        return
+    c0 = snap["encoders"]["C"]
     remaining = target - c0
     if abs(remaining) > max_deg * TICKS_PER_DEG:
         print("REFUSED: {} ticks ({:.1f} deg) exceeds the {:.0f} deg per-move cap".format(
@@ -532,11 +507,12 @@ def rotate_to(target=297, speed_pct=16, max_deg=15.0, coast_ticks=40):
         "LEFT / user CCW" if direction > 0 else "RIGHT / user CW"))
 
     go = [True]
+    blocked = [None]
 
     def refresh():
         while go[0]:
             try:
-                rpc("turret", json.dumps({"pct": speed_pct * direction}))
+                blocked[0] = turret_intent(speed_pct * direction) or blocked[0]
             except Exception:
                 pass
             time.sleep(0.1)
@@ -557,6 +533,9 @@ def rotate_to(target=297, speed_pct=16, max_deg=15.0, coast_ticks=40):
             now = time.time()
             if lat > 0.5:
                 reason = "snapshot took {:.2f}s - position stale".format(lat)
+                break
+            if blocked[0]:
+                reason = "{} at C={}".format(blocked[0], c)
                 break
             if (target - c) * direction <= coast_ticks:
                 break
@@ -607,13 +586,10 @@ def main():
         pct = int(sys.argv[3]) if len(sys.argv) > 3 else 32
         turret_const(seconds=secs, speed_pct=pct)
         return
-    if mode == "return":
-        tgt = int(sys.argv[2]) if len(sys.argv) > 2 else 297
-        return_to(tgt)
-        return
     if mode == "rotate":
-        tgt = int(sys.argv[2]) if len(sys.argv) > 2 else 297
-        rotate_to(target=tgt)
+        if len(sys.argv) < 3:
+            sys.exit("usage: motord_parity_probe.py rotate <absolute encoder target>")
+        rotate_to(target=int(sys.argv[2]))
         return
     if mode == "rel":
         delta = int(sys.argv[2]) if len(sys.argv) > 2 else 0
@@ -632,11 +608,12 @@ def main():
         c0 = snap_encoders()["C"]
         print("burst: start C={}, pct {} for {:.1f}s".format(c0, pct, secs))
         go = [True]
+        blocked = [None]
 
         def refresh():
             while go[0]:
                 try:
-                    rpc("turret", json.dumps({"pct": pct}))
+                    blocked[0] = turret_intent(pct) or blocked[0]
                 except Exception:
                     pass
                 time.sleep(0.1)
@@ -647,6 +624,8 @@ def main():
         go[0] = False
         thr.join()
         rpc("turret", json.dumps({"pct": 0}))
+        if blocked[0]:
+            print("burst stopped by the envelope guard: " + blocked[0])
         time.sleep(0.8)
         c1 = snap_encoders()["C"]
         print("burst done: C={} (dC={} ticks = {:.1f} deg)".format(

@@ -13,6 +13,26 @@ Timeline: `grep "^## \[" doc/log.md | head`.
 
 ---
 
+## [2026-10-26] decision | Turret cable envelope ±180°, enforced in both motor writers; AGENTS.md rewritten
+
+User confirmed the turret faces camera-forward at C=42298 and the cables
+are fine there, and set the rule: never more than 180° either way. Both
+motor writers now enforce it from `~/.koc/turret.json` (v1 server:
+`app/server/turret_guard.py`; motord: `robot/motord/src/guard.rs`),
+fail-closed: missing file or a first reading >400 ticks from the saved
+position locks the turret; no motion on a stale reading. Live checks: both
+writers stop at a temporary limit and lock on a forced mismatch; the v1
+server overshoots up to 458 ticks at pwm 250, so the stop margin is 800
+ticks. Probe `return` mode removed, `rotate` needs an explicit target, the
+legacy curses tool is guarded. Kinect after the test: bearing +1.42° at
+C=42308 (vs +0.10° at the original centering; likely scene shift, reference
+kept). AGENTS.md: template checklist and generic sections replaced by
+project-specific rules, robot gotchas and conventions. New pages:
+[turret centering runbook](runbooks/turret-centering.md),
+[agent lessons](development/agent-lessons.md),
+[envelope run](sources/2026-10-26-turret-envelope-run.md). Superseded: the
+"±90° without a visual check" rule and the "unwind one turn" item.
+
 ## [2026-10-26] lint | Wiki health check after the turret centering session
 
 Overall: 🟡 Yellow → fixed to 🟢 except the items below

@@ -6,7 +6,11 @@
 //! motors if motord itself dies. Sensors: PORT_1 color (10-bit raw), PORT_4
 //! sonar (I2C workaround; 255 = no echo).
 //!
+//! Turret: every turret write passes the cable envelope guard (guard.rs).
+//!
 //! Usage: motord [socket_path] [serial_dev] [loop_hz]
+
+mod guard;
 
 use brickpi::{
     build_tx, decode_values, estop_payload, parse_rx, sensor_setup_payload, timeout_payload,
@@ -42,6 +46,7 @@ struct State {
     intents: Mutex<Intents>,
     estop: AtomicBool,
     cache: Mutex<Cache>,
+    guard: Mutex<guard::Guard>,
     started: Instant,
 }
 
@@ -198,8 +203,14 @@ fn main() {
         intents: Mutex::new(Intents { left_pct: 0, right_pct: 0, turret_pct: 0, updated: Instant::now() }),
         estop: AtomicBool::new(false),
         cache: Mutex::new(Cache::default()),
+        guard: Mutex::new(guard::Guard::load(guard::default_path())),
         started: Instant::now(),
     });
+    {
+        let g = state.guard.lock().unwrap();
+        println!("motord: turret state {} ({})", g.path.display(),
+                 if g.locked() { g.reason().unwrap_or("locked") } else { "loaded" });
+    }
 
     // --- startup handshake: sensor setup + firmware deadman ---
     {
@@ -224,6 +235,7 @@ fn main() {
         let state = std::sync::Arc::clone(&state);
         std::thread::spawn(move || {
             let period = Duration::from_millis(1000 / loop_hz);
+            let mut last_block: Option<guard::Block> = None;
             loop {
                 let t0 = Instant::now();
                 let estop = state.estop.load(Ordering::Relaxed);
@@ -250,8 +262,37 @@ fn main() {
                     let _ = read_all(fd);
                 } else {
                     // Chip 0: motors A (left track), B (unused). Chip 1: C (turret), D (right track).
+                    let turret = match state.guard.lock().unwrap().limit(cache.encoders[2] as i64, turret) {
+                        Ok(pct) => {
+                            last_block = None;
+                            pct
+                        }
+                        Err(block) => {
+                            if block.is_hard() {
+                                if last_block.is_none() {
+                                    eprintln!("motord: turret command blocked: {}", block);
+                                }
+                                last_block = Some(block);
+                            }
+                            0
+                        }
+                    };
                     exchange(fd, ADDR_CHIP0, [scale(left), 0], [SensorPort::Raw10(TYPE_SENSOR_LIGHT_ON), SensorPort::None], 0, &mut cache);
-                    exchange(fd, ADDR_CHIP1, [scale(turret), scale(right)], [SensorPort::None, SensorPort::UltrasonicCont], 2, &mut cache);
+                    let ok = exchange(fd, ADDR_CHIP1, [scale(turret), scale(right)], [SensorPort::None, SensorPort::UltrasonicCont], 2, &mut cache);
+                    let persist = {
+                        let mut g = state.guard.lock().unwrap();
+                        if ok {
+                            g.observe(cache.encoders[2] as i64, Instant::now()).map(|env| (g.path.clone(), env))
+                        } else {
+                            g.mark_stale();
+                            None
+                        }
+                    };
+                    if let Some((path, env)) = persist {
+                        if let Err(e) = guard::save(&path, &env) {
+                            eprintln!("motord: turret state not saved: {}", e);
+                        }
+                    }
                 }
                 cache.loops += 1;
                 *state.cache.lock().unwrap() = cache;
@@ -281,9 +322,18 @@ fn main() {
             }
             "turret" => {
                 let pct = params.get("pct").and_then(Json::as_i64).unwrap_or(0).clamp(-100, 100);
+                let encoder = s.cache.lock().unwrap().encoders[2] as i64;
+                let blocked = match s.guard.lock().unwrap().limit(encoder, pct) {
+                    Err(block) if block.is_hard() => Some(block),
+                    _ => None,
+                };
                 let mut i = s.intents.lock().unwrap();
-                i.turret_pct = pct;
                 i.updated = Instant::now();
+                if let Some(block) = blocked {
+                    i.turret_pct = 0;
+                    return Outcome::Error(-2, format!("turret blocked: {}", block));
+                }
+                i.turret_pct = pct;
                 Outcome::Reply(Json::obj(&[("ok", Json::Bool(true))]))
             }
             "estop" => {
@@ -295,6 +345,7 @@ fn main() {
                 Outcome::Reply(Json::obj(&[("ok", Json::Bool(true))]))
             }
             "snapshot" => {
+                let turret_guard = s.guard.lock().unwrap().to_json();
                 let c = s.cache.lock().unwrap();
                 Outcome::Reply(Json::obj(&[
                     ("encoders", Json::obj(&[
@@ -308,6 +359,7 @@ fn main() {
                     ("loops", Json::num(c.loops as i64)),
                     ("errors", Json::num(c.errors as i64)),
                     ("estop_latched", Json::Bool(s.estop.load(Ordering::Relaxed))),
+                    ("turret_guard", turret_guard),
                 ]))
             }
             "debug_raw" => {

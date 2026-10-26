@@ -12,6 +12,7 @@ from BrickPi import PORT_A, PORT_D, PORT_C, PORT_1, PORT_4, TYPE_SENSOR_LIGHT_ON
 
 from app.common.serialization import compress, decompress
 from app.networking import LegoMotor, LegoSensor, TelemetryPacket, SystemStats
+from app.server.turret_guard import TurretGuard
 
 COMMAND_QUEUE_GRACE = 3
 
@@ -48,6 +49,7 @@ class BrickPiWrapper(Thread):
         self._brick_temp = 0
         self._brick_voltage = 0
         self._command_queue_grace = COMMAND_QUEUE_GRACE
+        self._turret_guard = TurretGuard()
 
         # One SMBus for the wrapper's lifetime. The robot's smbus2 (0.2.1)
         # has no context-manager support, so the previous per-call
@@ -113,9 +115,13 @@ class BrickPiWrapper(Thread):
     def update_values(self, telemetry: TelemetryPacket) -> TelemetryPacket:
         BrickPi.MotorSpeed[self._left_motor.port] = telemetry.left_motor.speed
         BrickPi.MotorSpeed[self._right_motor.port] = telemetry.right_motor.speed
-        BrickPi.MotorSpeed[self._turret_motor.port] = telemetry.turret_motor.speed
+        BrickPi.MotorSpeed[self._turret_motor.port] = self._turret_guard.limit(
+            BrickPi.Encoder[self._turret_motor.port], telemetry.turret_motor.speed)
 
-        BrickPiUpdateValues()
+        if BrickPiUpdateValues() == 0:
+            self._turret_guard.observe(BrickPi.Encoder[self._turret_motor.port])
+        else:
+            self._turret_guard.mark_stale()
 
         # Update temp, voltage, and system stats every 10 cycles (~1 second)
         if self._sequence % 10 == 0:

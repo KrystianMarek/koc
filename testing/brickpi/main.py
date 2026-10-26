@@ -1,12 +1,34 @@
 #!/usr/bin/env python
 
 import curses
+import os
+import sys
 import time
 
 # from system_temperature import SystemTemperature
 from BrickPi import BrickPiUpdateValues, BrickPiSetup, BrickPi, PORT_A, PORT_D, BrickPiSetupSensors, PORT_C, PORT_1, \
     TYPE_SENSOR_COLOR_FULL, TYPE_SENSOR_COLOR_GREEN, TYPE_SENSOR_COLOR_RED, TYPE_SENSOR_COLOR_BLUE, PORT_3, \
     TYPE_SENSOR_ULTRASONIC_CONT, PORT_4
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from app.server.turret_guard import TurretGuard  # noqa: E402
+
+_turret = {"guard": None, "speed": 0}
+
+
+def update_values(brick):
+    """Every exchange passes the turret through the cable envelope guard: the
+    requested turret speed stays set in MotorSpeed across later exchanges."""
+    if _turret["guard"] is None:
+        _turret["guard"] = TurretGuard()
+    guard = _turret["guard"]
+    brick.MotorSpeed[PORT_C] = guard.limit(brick.Encoder[PORT_C], _turret["speed"])
+    result = BrickPiUpdateValues()
+    if result == 0:
+        guard.observe(brick.Encoder[PORT_C])
+    else:
+        guard.mark_stale()
+    return result
 
 
 def update_window(window, power, key, temp, color):
@@ -36,12 +58,12 @@ def decrease_power(power, power_step):
 def run_motors(brick, power_left, power_right):
     brick.MotorSpeed[PORT_D] = power_left
     brick.MotorSpeed[PORT_A] = power_right
-    BrickPiUpdateValues()
+    update_values(brick)
 
 
 def rotate_turret(power, brick):
-    brick.MotorSpeed[PORT_C] = power
-    BrickPiUpdateValues()
+    _turret["speed"] = power
+    update_values(brick)
 
 
 def rotate_turret_cw(power, brick):
@@ -80,7 +102,7 @@ def setup_ultrasonic_sensor(brick):
 def read_color_sensor(brick):
     col = [ None , "Black","Blue","Green","Yellow","Red","White" ]   #used for converting the color index to name
 
-    result = BrickPiUpdateValues()  # Ask BrickPi to update values for sensors/motors
+    result = update_values(brick)
     if not result:
         return brick.Sensor[PORT_1]     #BrickPi.Sensor[PORT] stores the value obtained from sensor
 
@@ -102,7 +124,7 @@ def test_ultrasonic_sensor():
     setup_ultrasonic_sensor(brick)
 
     while True:
-        result = BrickPiUpdateValues()  # Ask BrickPi to update values for sensors/motors
+        result = update_values(brick)
         if not result:
             print(BrickPi.Sensor[PORT_4])     #BrickPi.Sensor[PORT] stores the value obtained from sensor
         # time.sleep(.01)     # sleep for 10 ms

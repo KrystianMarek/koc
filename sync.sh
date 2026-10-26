@@ -23,6 +23,7 @@ rsync -ah --progress --delete \
     --exclude '.factory' \
     --exclude '.codegraph' \
     --exclude 'external' \
+    --exclude 'robot/target' \
     --exclude 'testing' \
     --exclude 'doc' \
     --exclude 'pictures' \

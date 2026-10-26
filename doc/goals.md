@@ -17,12 +17,10 @@ change in [log.md](log.md).
 ## Current cycle (short horizon)
 
 - [ ] Finish Phase 1 (`koc-v2-motord-driver`): homing intent
-      (`koc-v2-turret-homing`), in-daemon cable envelope + stall detection,
-      probe-shim acceptance
+      (`koc-v2-turret-homing`), in-daemon stall detection, probe-shim
+      acceptance
 - [ ] Confirm the turret ratio (~116.7 vs 125 ticks/°) with an independent
       measurement before using absolute turret targets
-- [ ] Decide whether to unwind the ~one-turn turret cable wrap (a 360° move —
-      user approval required)
 - [ ] `koc-hw-kinect-wedge`: Stream-70 storms persist on the two-hub chain
 
 ## Achieved
@@ -39,6 +37,9 @@ change in [log.md](log.md).
   approved; Phase 1 `motord` reached read/motion parity with `BrickPi.py`
 - 2026-10-26: turret re-centered by Kinect; `motord` snapshot starvation
   fixed; sonar confirmed working ([centering run](sources/2026-10-26-turret-centering-run.md))
+- 2026-10-26: user confirmed camera-forward (C=42298) and the cables there;
+  the ±180° cable envelope is enforced by the v1 server and motord
+  ([envelope run](sources/2026-10-26-turret-envelope-run.md))
 
 ## Related
 

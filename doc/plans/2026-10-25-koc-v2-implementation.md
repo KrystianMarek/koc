@@ -71,7 +71,7 @@ measured. v1 is healthy enough to serve as the test oracle.
 - [x] BrickPi protocol module: framing, checksum, the 5 message types; unit tests against golden frames captured from `BrickPi.py`.
 - [x] Differential harness on the robot (`testing/motord_parity_probe.py`; read parity bit-exact, motion within ~9 %): v1 server and motord alternate the same scripted commands (twitch, rotate, sensor reads); assert encoder deltas agree within tolerance (the `differential-bootstrap` pattern; `BrickPi.py` is the oracle).
 - [x] Firmware deadman enabled + verified (motors float when motord is SIGKILLed).
-- [ ] Intents implemented (drive, turret, estop, snapshot done; turret_home, cable envelope and stall detection pending): drive (left/right %, or arc), turret_rotate, turret_home (color-landmark + approach-direction aware — closes `koc-v2-turret-homing`), estop, sensor snapshot.
+- [ ] Intents implemented (drive, turret, estop, snapshot done; ±180° cable envelope done 2026-10-26 — [envelope plan](2026-10-26-turret-envelope.md); turret_home and stall detection pending): drive (left/right %, or arc), turret_rotate, turret_home (color-landmark + approach-direction aware — closes `koc-v2-turret-homing`), estop, sensor snapshot.
 - [ ] Acceptance: the existing probes (`turret_swing90_probe.py`, `drive_ratio_probe.py`) re-run against a motord-backed shim and reproduce their published constants.
 
 ### Phase 2 — `camerad`

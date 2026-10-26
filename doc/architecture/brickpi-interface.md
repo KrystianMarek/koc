@@ -87,6 +87,11 @@ golden-frame tests, `motord`, `rpc`, `robotctl`):
 - **Never hold the shared state lock across UART I/O or the loop sleep** —
   doing so starved `snapshot` for 8–46 s under motion (fixed 2026-10-26,
   [centering run](../sources/2026-10-26-turret-centering-run.md)).
+- **Turret cable envelope** (`motord/src/guard.rs`, the same rules as the
+  v1 server's `turret_guard.py`): turret speeds pass the ±180° guard
+  every loop; the `turret` RPC rejects locked or outward-at-limit intents
+  (error -2); `snapshot` reports `turret_guard`. See the
+  [envelope plan](../plans/2026-10-26-turret-envelope.md).
 
 Original strategy:
 

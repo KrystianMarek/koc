@@ -8,9 +8,15 @@ evidence: [state capture](../sources/2026-10-24-robot-state-capture.md),
 
 - **Code**: `~/rpi_lego_robot/` on the robot — a plain rsync copy, *not* a git
   repo. Local `sync.sh` rsyncs there, excluding `.git`, `.venv`, `.beads`,
-  `.claude`, `.factory`, `.codegraph`, `external`, `testing`, `doc`,
-  `pictures` and the heavy NCS submodule parts. Probes in `testing/` are
-  therefore copied by hand (`scp testing/<probe>.py pi@…:~/rpi_lego_robot/testing/`).
+  `.claude`, `.factory`, `.codegraph`, `external`, `robot/target` (the
+  robot's own armv7 build), `testing`, `doc`, `pictures` and the heavy NCS
+  submodule parts. It reads `ROBOT_IP` from the git-ignored `.local/env`
+  (`ROBOT_IP=192.168.10.187`); without that file, copy changed files with
+  `scp`. Probes in `testing/` are always copied by hand
+  (`scp testing/<probe>.py pi@…:~/rpi_lego_robot/testing/`).
+- **Turret state**: `~/.koc/turret.json` holds the cable envelope (center,
+  half-range, last position); both motor writers read it at start and keep
+  `last` current. See the [turret centering runbook](../runbooks/turret-centering.md).
 - **Environments**: `~/.virtualenvs/pi_robot3` (Python 3.5.3) is the server
   env — freenect, pyzmq 17.1.2, numpy 1.15.2, psutil, netifaces, PyYAML all
   verified importable. `pi_robot` is legacy Python 2.7. `~/brickpi/` holds the
@@ -42,7 +48,6 @@ before restarting v1. Kinect measurements still need the v1 server (no
 |---|---|---|
 | Kinect behind two USB hubs | "Stream 70" resync storms; ~13–16 s recovery after motion. Capture throttling, spawn isolation and self-heal are deployed; the storms are physical | `bd` `koc-hw-kinect-wedge` |
 | `motord` exits on SIGINT/SIGTERM without unlinking `/tmp/motord.sock` | Clients that test for the file see a dead daemon (the probe now checks with a real connect) | `bd` `koc-v2-motord-sockclean` |
-| Turret cable wrap ≈ one turn relative to C=297 | No further left (encoder-positive) rotation; unwinding needs a 360° move (user approval) | [centering run](../sources/2026-10-26-turret-centering-run.md) |
 | Stale tarballs in `~` on the robot (`NCSDK-1.12.01.01.tar.gz` is a 443 B S3 error XML; `ncappzoo_data.tar.gz` is a stub) | Misleading; a future NCS setup must use the documented mirror instead | cleanup chore |
 | Pickle over ZMQ | RCE if either endpoint is untrusted; fine on a trusted LAN | consideration |
 | No CI | Rust unit tests (`cargo test`) and pre-commit hooks run locally only | — |
@@ -61,8 +66,10 @@ rsync -a --exclude target robot/ pi@192.168.10.187:/home/pi/rpi_lego_robot/robot
 ssh pi@192.168.10.187 'cd ~/rpi_lego_robot/robot && PATH=$HOME/.cargo/bin:$PATH cargo build --release'
 
 # on the robot (P as above), v1 server stopped unless noted
-$P testing/motord_parity_probe.py motord    # snapshots; starts motord if needed
+$P testing/motord_parity_probe.py motord    # snapshots + turret guard state; starts motord if needed
 $P testing/motord_parity_probe.py rel -375  # turret move in ticks: position-stopped, 15° cap
+$P testing/turret_envelope.py show          # cable envelope: center, stop positions
+pkill -x motord                             # stop motord (exact name; safe from self-match)
 $P testing/kinect_bearing.py 61             # obstacle bearing; needs the v1 server UP; arg = sonar cm
 
 # headless end-to-end checks from the dev machine (v1 server up)
@@ -74,8 +81,10 @@ Gotchas:
 
 - Redirect probe output to a file on the robot and `cat` it in the same
   command; long ssh commands that background jobs have lost their output.
-- Turret: never accumulate more than ±90° without a visual check. The probe
-  refuses single moves over 15°. Positive ticks = turret left (user CCW).
+- Turret: never more than 180° either way from camera-forward; both motor
+  writers enforce it and lock when the position is unknown (power cycle,
+  hand turn). The probe refuses single moves over 15°. Positive ticks =
+  turret left (user CCW).
 - Encoders persist while the BrickPi is powered; never assume 0 after a
   restart.
 
@@ -85,3 +94,4 @@ Gotchas:
 - [BrickPi interface](../architecture/brickpi-interface.md) — protocol + motord
 - [Networking](../networking.md) — port/protocol map
 - [Project structure](project-structure.md)
+- [Agent lessons](agent-lessons.md) · [Turret centering runbook](../runbooks/turret-centering.md)

@@ -15,7 +15,7 @@ references, research notes, spec dumps, and anything the wiki synthesizes *from*
    in [index.md](../index.md).
 3. Append an `ingest` entry to [log.md](../log.md).
 
-See [AGENTS.md → Project as an LLM Wiki](../../AGENTS.md#project-as-an-llm-wiki).
+See [AGENTS.md → Documentation wiki](../../AGENTS.md#documentation-wiki).
 
 ## Naming Convention
 
@@ -37,6 +37,7 @@ See [AGENTS.md → Project as an LLM Wiki](../../AGENTS.md#project-as-an-llm-wik
 | [2026-10-25-drive-ratio-run.md](2026-10-25-drive-ratio-run.md) | Drive odometry mission: track break, repositioning, 161.0 ticks/cm | 2026-10-25 | ✅ |
 | [2026-10-25-turret-cable-incident.md](2026-10-25-turret-cable-incident.md) | Turret cable wrap during motord parity; rules for v2 | 2026-10-25 | ✅ |
 | [2026-10-26-turret-centering-run.md](2026-10-26-turret-centering-run.md) | Live turret re-centering: tooling defects, moves, Kinect readings, one-turn ≈ 42000 ticks | 2026-10-26 | ✅ |
+| [2026-10-26-turret-envelope-run.md](2026-10-26-turret-envelope-run.md) | ±180° envelope live checks: locked cases, limit stops, overshoot per writer | 2026-10-26 | ✅ |
 
 ## Related
 

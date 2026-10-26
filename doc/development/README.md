@@ -6,7 +6,7 @@ Documentation for developers working on this project — setup, workflow, debugg
 
 For new developers:
 
-1. Read [CLAUDE.md](../../CLAUDE.md) for project conventions and tech stack.
+1. Read [AGENTS.md](../../AGENTS.md) for project conventions and tech stack.
 2. Review the current [Roadmap](../plans/README.md) and active plans.
 3. Check [Runbooks](../runbooks/README.md) for operational procedures.
 
@@ -19,6 +19,7 @@ Descriptive kebab-case filenames (e.g., `test-strategy.md`, `dependency-upgrade-
 | Document | Description |
 |----------|-------------|
 | [robot-deployment.md](robot-deployment.md) | Software state on the robot: deployment, v2 build, UART ownership, known issues, operating commands |
+| [agent-lessons.md](agent-lessons.md) | Rules agents learned on the live robot (turret, daemons, shell, measurement), each with its evidence |
 | [2026-10-24-koc-v1-code-assessment.md](2026-10-24-koc-v1-code-assessment.md) | V1 codebase assessment — v2 baseline |
 | [project-structure.md](project-structure.md) | Code organization (v1) |
 | [refactor-networking.md](refactor-networking.md) | Networking refactor plan (completed Dec 2025) |

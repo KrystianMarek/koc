@@ -63,9 +63,21 @@ robot runs `server.py`; all client connections are inbound (5556/5559/5560).
   session-start spot C=297 — see
   [turret centering run](../sources/2026-10-26-turret-centering-run.md).
   Do not compute "same facing" positions with 45000 ticks per turn.
-  At speed 80 the turret pans ~4°/s. **Cables run through the turret —
-  rotation is limited; never rotate unbounded.** Position is tracked by the
+  At speed 80 the turret pans ~4°/s. Position is tracked by the
   cumulative encoder (persists while the BrickPi is powered).
+- **Turret cable envelope (2026-10-26)**: cables run through the turret and
+  are neutral at camera-forward. **The turret never turns more than 180°
+  either way from it.** Both motor writers enforce this from
+  `~/.koc/turret.json` (`center` 42298, `half_range` 21000 ticks): the
+  v1 server via `app/server/turret_guard.py`, motord via
+  `robot/motord/src/guard.rs`. Outward commands stop 800 ticks short of the
+  limit (the v1 server coasts up to ~460 ticks past a stop at pwm 250). A
+  missing file, or a first reading more than 400 ticks from the saved
+  position (power cycle, hand turn), **locks** the turret until it is
+  re-referenced — see the [turret centering runbook](../runbooks/turret-centering.md)
+  and [envelope run](../sources/2026-10-26-turret-envelope-run.md). This
+  supersedes the "±90° without a visual check" rule of the
+  [cable incident](../sources/2026-10-25-turret-cable-incident.md).
 - **Turret homing mark**: the color sensor (PORT_1) sweeps ~5 cm above the
   body; a cable at the body's back marks camera-forward (the original paper
   dial is destroyed). Signal quality is excellent (σ≈1 counts, features
@@ -76,11 +88,11 @@ robot runs `server.py`; all client connections are inbound (5556/5559/5560).
   blob centered at **encoder ≈ +527, color ≈ 790** — the first measured
   homing landmark pair. See
   [turret homing run](../sources/2026-10-25-turret-homing-run.md).
-- **Camera-forward reference (2026-10-26)**: **C≈42298** on the front
-  obstacle, approached from the left (Kinect bearing +0.10°). Cable wrap is
-  about one turn relative to C=297; unwinding needs a 360° move (user
-  approval). The 2026-10-25 "cable stalls" were probe artifacts (intent
-  refresh starved by slow snapshots), not binding — see
+- **Camera-forward reference (2026-10-26)**: **C=42298** on the front
+  obstacle, approached from the left (Kinect bearing +0.10°). **User
+  confirmed the facing and that the cables are fine there**; it is the
+  envelope center. The 2026-10-25 "cable stalls" were probe artifacts
+  (intent refresh starved by slow snapshots), not binding — see
   [centering run](../sources/2026-10-26-turret-centering-run.md).
 - **Sonar (PORT_4)**: works at rest — 61 cm with an obstacle the Kinect puts
   at 0.61–0.67 m (2026-10-26). Blind while the tracks turn. The 255 (no
@@ -147,5 +159,6 @@ Raw evidence: [2026-10-24 NCS state](../sources/2026-10-24-ncs-state.md).
 
 - [2026-10-24 robot state capture](../sources/2026-10-24-robot-state-capture.md) (raw data)
 - `testing/kinect_stream_probe.py`, `testing/turret_rotate_probe.py` (v1 measurement tools)
-- `testing/motord_parity_probe.py` (motord parity + turret moves), `testing/kinect_bearing.py` (obstacle bearing)
+- `testing/motord_parity_probe.py` (motord parity + turret moves), `testing/kinect_bearing.py` (obstacle bearing), `testing/turret_envelope.py` (show / re-reference the envelope)
+- [Agent lessons](../development/agent-lessons.md) — rules learned on this hardware
 - [Architecture overview](README.md) · [Networking](../networking.md) — port map

@@ -6,13 +6,14 @@ These are living documents — update them when configuration changes.
 
 ## Naming Convention
 
-`<procedure-name>.md` — descriptive kebab-case (e.g., `deploy-production.yml`, `rotate-secrets.md`, `db-restore.md`).
+`<procedure-name>.md` — descriptive kebab-case (e.g., `turret-centering.md`).
 
 ## Index
 
 | Runbook | Description |
 |---------|-------------|
 | [wiki-lint.md](wiki-lint.md) | Health-check the `doc/` LLM Wiki: freshness, contradictions, orphans, coverage, ticket↔wiki consistency |
+| [turret-centering.md](turret-centering.md) | Point the turret at camera-forward with the Kinect and re-reference the ±180° cable envelope (also: unlocking a locked turret) |
 
 ## Runbook Template
 
