@@ -29,7 +29,7 @@ struct Intents {
     updated: Instant,
 }
 
-#[derive(Default)]
+#[derive(Default, Clone, Copy)]
 struct Cache {
     encoders: [i32; 4], // A, B, C, D
     color_raw: i32,
@@ -238,7 +238,11 @@ fn main() {
                     (i.left_pct, i.right_pct, i.turret_pct, fresh)
                 };
                 let scale = |pct: i64| -> i16 { ((pct * 255) / 100).clamp(-255, 255) as i16 };
-                let mut cache = state.cache.lock().unwrap();
+                // Exchange into a local copy: holding the shared lock across the
+                // UART I/O and the period sleep starved snapshot() for seconds.
+                let mut cache = {
+                    *state.cache.lock().unwrap()
+                };
                 if estop {
                     write_frame(fd, &build_tx(ADDR_CHIP0, &estop_payload()));
                     write_frame(fd, &build_tx(ADDR_CHIP1, &estop_payload()));
@@ -250,6 +254,7 @@ fn main() {
                     exchange(fd, ADDR_CHIP1, [scale(turret), scale(right)], [SensorPort::None, SensorPort::UltrasonicCont], 2, &mut cache);
                 }
                 cache.loops += 1;
+                *state.cache.lock().unwrap() = cache;
                 let elapsed = t0.elapsed();
                 if elapsed < period {
                     std::thread::sleep(period - elapsed);

@@ -25,6 +25,7 @@ Status: ✅ live · 🚧 stub / planned
 | [sources/2026-10-24-robot-state-capture.md](sources/2026-10-24-robot-state-capture.md) | SSH surveys + probe transcripts from the live robot |
 | [sources/2026-10-24-hardware-libs-capture.md](sources/2026-10-24-hardware-libs-capture.md) | BrickPi UART protocol + libfreenect API facts, upstream repo status |
 | [sources/2026-10-24-ncs-state.md](sources/2026-10-24-ncs-state.md) | Intel NCS (USB accelerator) state on the robot + ecosystem status |
+| [sources/2026-10-26-turret-centering-run.md](sources/2026-10-26-turret-centering-run.md) | Turret re-centered by Kinect (C≈42298); motord lock starvation fixed; ~116.7 ticks/° |
 | [guidance/](guidance/README.md) | External expert consultations (requests + responses) |
 | [inbox/](inbox/README.md) | Untriaged incoming feature requests |
 

@@ -13,6 +13,18 @@ Timeline: `grep "^## \[" doc/log.md | head`.
 
 ---
 
+## [2026-10-26] progress | Turret re-centered by Kinect; motord snapshot starvation fixed
+
+An audit found the previous turret "home" (297+45000) was ~25° off and two
+probe overshoots made it worse (peak C=46084, cable wrap over one turn).
+Fixed: motord held its cache lock across the loop sleep (snapshot 8–46 s →
+1–2 ms); probe `rotate_to` now stops by position; stale-socket and
+self-matching `pkill` traps; `kinect_bearing.py` now segments the obstacle
+by sonar range. Four moves landed within 12 ticks; final Kinect bearing
++0.10°, surface yaw +0.25° at **C=42298**. Implies ~42000 ticks per turret
+turn (~116.7 ticks/°). Sonar reads 61 cm — not dead.
+Raw: [sources/2026-10-26-turret-centering-run.md](sources/2026-10-26-turret-centering-run.md).
+
 ## [2026-10-25] progress | Drive-ratio mission: track broke mid-run; re-diagnosed on the repositioned robot
 
 The first drive-ratio run ended with a **broken rear track** (the sonar went

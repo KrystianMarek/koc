@@ -4,31 +4,35 @@ Current progress snapshot — the narrative complement to `bd status`. Refresh o
 any status change and during each [wiki-lint](runbooks/wiki-lint.md) pass. For
 the live work queue, run `bd ready` and `bd status`.
 
-_Last updated: 2026-10-24_
+_Last updated: 2026-10-26_
 
 ## In progress
 
-- Nothing mid-flight; working tree holds the uncommitted 2026-10-24 session
-  (template adoption + casing fix + docs + probes) awaiting a commit decision.
+- `koc-v2-motord-driver` (Phase 1 of the
+  [v2 plan](plans/2026-10-25-koc-v2-implementation.md)): read/motion parity
+  done; snapshot starvation fixed 2026-10-26. Remaining: homing intent,
+  in-daemon cable envelope + stall detection, probe-shim acceptance.
 
 ## Done recently
 
-- 2026-10-24: adopted ai-assisted-development template (AGENTS.md, doc wiki,
-  pre-commit, bd); researched Microduck and cloned its stack into `external/`.
-- 2026-10-24: live robot session — Kinect stream + turret verified, dynamics
-  measured, server wedge diagnosed, v1 code assessed.
-- Bugs filed: `koc-hw-kinect-wedge`, `koc-hw-sync-target`.
-- `app/Networking` → `app/networking` casing fix staged locally.
+- 2026-10-26: turret re-centered on the obstacle by Kinect at **C≈42298**
+  (bearing +0.10°); evidence for ~42000 ticks per turret turn — see
+  [turret centering run](sources/2026-10-26-turret-centering-run.md).
+- 2026-10-25: motord Phase 1 parity vs BrickPi.py; turret cable incident
+  ([capture](sources/2026-10-25-turret-cable-incident.md)); drive odometry
+  161.0 ticks/cm.
 
 ## Blocked / waiting
 
-- Commit/push decision for the session work (user).
+- User visual check that the turret looks straight ahead.
+- Cable wrap is about one full turn relative to C=297; unwinding needs a
+  360° move, which needs explicit user approval.
 
 ## Next up
 
-- Fix `koc-hw-kinect-wedge`, fix `koc-hw-sync-target`.
-- V2 planning: resolve open questions in [vision/v2-microduck-stack.md](vision/v2-microduck-stack.md),
-  then write the implementation plan in `doc/plans/`.
+- Confirm the turret ratio (~116.7 vs 125 ticks/°) with an independent
+  measurement before any absolute-position targets.
+- `koc-v2-turret-homing`, then the in-daemon cable envelope.
 
 ## Related
 

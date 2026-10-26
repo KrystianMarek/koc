@@ -102,7 +102,19 @@ def rpc(method, params="{}"):
 
 
 def motord_running():
-    return os.path.exists(SOCK)
+    """True only if a daemon answers; motord's signal handler exits without
+    unlinking the socket, so a leftover file is removed here."""
+    if not os.path.exists(SOCK):
+        return False
+    s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    try:
+        s.connect(SOCK)
+        return True
+    except socket.error:
+        os.unlink(SOCK)
+        return False
+    finally:
+        s.close()
 
 
 def stop_motord():
@@ -483,92 +495,95 @@ def return_to(target=297, speed_pct=32):
     print("oracle cross-check: C={} (delta {})".format(c_oracle, c_oracle - c_end))
 
 
-def rotate_to(target=297, speed_pct=32, burst_s=12.0):
-    """Rotate the turret to an absolute encoder position, direction auto.
+TICKS_PER_DEG = 125.0
 
-    The direction follows the sign of (target - current), so the wrap
-    stays minimal: to return to the original facing use the original
-    position itself (297), NOT 297+45000 (that would wrap a full turn).
 
-    During each burst the intent refresh thread runs untouched and NO
-    snapshot polls happen (they starved the refresh below the 400 ms
-    expiry and produced false stall readings on 2026-10-25). The position
-    is sampled once before and once after each burst; the rate is
-    dC/burst_s - the honest motion window. Stall guard: abort if a full
-    burst progresses <100 ticks/s.
+def rotate_to(target=297, speed_pct=16, max_deg=15.0, coast_ticks=40):
+    """Rotate the turret to an absolute encoder position, stopping by position.
+
+    Sign convention (user-confirmed): positive ticks = turret LEFT (user's
+    CCW seen from above); negative = RIGHT (CW).
+
+    A refresh thread keeps the turret intent alive at 10 Hz while the main
+    thread polls the encoder at ~50 Hz and releases the intent once the
+    remaining distance is within `coast_ticks`. Moves larger than `max_deg`
+    are refused: cable wrap is unsafe to accumulate without a visual check.
+    Aborts (motors stopped) on a slow snapshot (>0.5 s, the position is
+    stale), on <30 ticks of progress in any 1 s window (stall), or on a
+    time limit of twice the expected duration plus 3 s.
     """
     stop_motord()
     if not start_motord():
         sys.exit("motord failed to start")
     c0 = snap_encoders()["C"]
     remaining = target - c0
-    direction = 1 if remaining > 0 else -1
-    print("rotate_to: start C={}, target {}, remaining {} ticks "
-          "({:.1f} deg, direction {})".format(
-              c0, target, remaining, remaining / 125.0,
-              "CW" if direction > 0 else "CCW"))
-    if abs(remaining) < 150:
-        print("already at target - no motion")
+    if abs(remaining) > max_deg * TICKS_PER_DEG:
+        print("REFUSED: {} ticks ({:.1f} deg) exceeds the {:.0f} deg per-move cap".format(
+            remaining, remaining / TICKS_PER_DEG, max_deg))
         stop_motord()
         return
-    leg = 0
-    while True:
-        leg += 1
-        c_leg0 = snap_encoders()["C"]
-        gap = target - c_leg0
-        if abs(gap) < 300:
-            break  # close enough; the coast lands it
-        pct = speed_pct if abs(gap) > 2500 else 10  # the gentle final approach
-        go = [True]
-        diag = {"refresh_fails": 0}
+    if abs(remaining) <= coast_ticks:
+        print("already at target (C={}, target {}) - no motion".format(c0, target))
+        stop_motord()
+        return
+    direction = 1 if remaining > 0 else -1
+    print("rotate_to: start C={}, target {}, {:+d} ticks ({:+.1f} deg, {})".format(
+        c0, target, remaining, remaining / TICKS_PER_DEG,
+        "LEFT / user CCW" if direction > 0 else "RIGHT / user CW"))
 
-        def refresh():
-            while go[0]:
-                try:
-                    rpc("turret", json.dumps({"pct": pct * direction}))
-                except Exception:
-                    diag["refresh_fails"] += 1
-                time.sleep(0.1)
+    go = [True]
 
-        thr = threading.Thread(target=refresh)
-        thr.start()
-        t_b = time.time()
-        next_diag = burst_s / 3.0
-        while time.time() - t_b < burst_s:
+    def refresh():
+        while go[0]:
+            try:
+                rpc("turret", json.dumps({"pct": speed_pct * direction}))
+            except Exception:
+                pass
             time.sleep(0.1)
-            if time.time() - t_b >= next_diag:
-                t_s = time.time()
-                snap = rpc("snapshot")["result"]
-                lat = time.time() - t_s
-                print("    diag@{:.1f}s: C={} errors={} loops={} snap_lat={:.2f}s refresh_fails={}".format(
-                    time.time() - t_b, snap["encoders"]["C"], snap["errors"],
-                    snap["loops"], lat, diag["refresh_fails"]))
-                next_diag += burst_s / 3.0
+
+    thr = threading.Thread(target=refresh)
+    t0 = time.time()
+    time_limit = 2.0 * abs(remaining) / (7.0 * speed_pct * 2.55) + 3.0
+    win_t, win_c = t0, c0
+    max_lat = 0.0
+    reason = None
+    thr.start()
+    try:
+        while True:
+            ts = time.time()
+            c = snap_encoders()["C"]
+            lat = time.time() - ts
+            max_lat = max(max_lat, lat)
+            now = time.time()
+            if lat > 0.5:
+                reason = "snapshot took {:.2f}s - position stale".format(lat)
+                break
+            if (target - c) * direction <= coast_ticks:
+                break
+            if now - win_t >= 1.0:
+                if abs(c - win_c) < 30:
+                    reason = "stall: {} ticks in {:.1f}s at C={}".format(
+                        c - win_c, now - win_t, c)
+                    break
+                win_t, win_c = now, c
+            if now - t0 > time_limit:
+                reason = "time limit {:.1f}s at C={}".format(time_limit, c)
+                break
+            time.sleep(0.02)
+    finally:
         go[0] = False
         thr.join()
         rpc("turret", json.dumps({"pct": 0}))
-        time.sleep(0.8)  # the coast settles
-        c_now = snap_encoders()["C"]
-        rate = abs(c_now - c_leg0) / float(burst_s)
-        print("  burst {}: dC={} (now C={}, remaining {}, rate {:.0f} ticks/s)".format(
-            leg, c_now - c_leg0, c_now, target - c_now, rate))
-        if abs(target - c_now) < 300:
-            break
-        if rate < 100.0:
-            print("  ABORT: rate collapsed - possible cable binding; robot idle")
-            stop_motord()
-            return
-        if leg > 20:
-            print("  ABORT: too many bursts")
-            stop_motord()
-            return
-    time.sleep(0.8)
+    time.sleep(1.0)  # let the coast settle before the final read
     c_end = snap_encoders()["C"]
-    print("rotate_to done: C={} (target {}; error {} ticks = {:.2f} deg)".format(
-        c_end, target, c_end - target, (c_end - target) / 125.0))
+    if reason:
+        print("  ABORT: " + reason)
+    print("rotate_to done: C={} (target {}; error {:+d} ticks = {:+.2f} deg; "
+          "{:.1f}s; max snapshot latency {:.3f}s)".format(
+              c_end, target, c_end - target, (c_end - target) / TICKS_PER_DEG,
+              time.time() - t0, max_lat))
     stop_motord()
     print("motord stopped - robot idle")
-
 
 def main():
     mode = sys.argv[1] if len(sys.argv) > 1 else "both"
@@ -596,13 +611,9 @@ def main():
         tgt = int(sys.argv[2]) if len(sys.argv) > 2 else 297
         return_to(tgt)
         return
-    if mode == "cw":
-        secs = float(sys.argv[2]) if len(sys.argv) > 2 else 12.0
-        rotate_to(target=297 + 45000, burst_s=secs)
-        return
     if mode == "rotate":
         tgt = int(sys.argv[2]) if len(sys.argv) > 2 else 297
-        rotate_to(target=tgt, burst_s=12.0)
+        rotate_to(target=tgt)
         return
     if mode == "rel":
         delta = int(sys.argv[2]) if len(sys.argv) > 2 else 0
@@ -610,7 +621,7 @@ def main():
             sys.exit("motord failed to start")
         c0 = snap_encoders()["C"]
         print("rel: current C={}, delta {} -> target {}".format(c0, delta, c0 + delta))
-        rotate_to(target=c0 + delta, burst_s=12.0)
+        rotate_to(target=c0 + delta)
         return
     if mode == "burst":
         secs = float(sys.argv[2]) if len(sys.argv) > 2 else 1.0

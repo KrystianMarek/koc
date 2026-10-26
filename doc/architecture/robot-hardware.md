@@ -57,6 +57,11 @@ robot runs `server.py`; all client connections are inbound (5556/5559/5560).
 - **Turret gearing**: **~125 ticks per turret degree ≈ 125:1** (measured
   2026-10-25 via Kinect optical angle reference, ±10% — see
   [turret calibration](../sources/2026-10-25-turret-calibration.md)).
+  **2026-10-26 evidence points lower: one full turn ≈ 42000 ticks
+  (≈116.7 ticks/°)**, from re-centering by Kinect at C≈42298 vs the
+  session-start spot C=297 — see
+  [turret centering run](../sources/2026-10-26-turret-centering-run.md).
+  Do not compute "same facing" positions with 45000 ticks per turn.
   At speed 80 the turret pans ~4°/s. **Cables run through the turret —
   rotation is limited; never rotate unbounded.** Position is tracked by the
   cumulative encoder (persists while the BrickPi is powered).
