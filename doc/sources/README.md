@@ -38,6 +38,7 @@ See [AGENTS.md → Documentation wiki](../../AGENTS.md#documentation-wiki).
 | [2026-10-25-turret-cable-incident.md](2026-10-25-turret-cable-incident.md) | Turret cable wrap during motord parity; rules for v2 | 2026-10-25 | ✅ |
 | [2026-10-26-turret-centering-run.md](2026-10-26-turret-centering-run.md) | Live turret re-centering: tooling defects, moves, Kinect readings, one-turn ≈ 42000 ticks | 2026-10-26 | ✅ |
 | [2026-10-26-turret-envelope-run.md](2026-10-26-turret-envelope-run.md) | ±180° envelope live checks: locked cases, limit stops, overshoot per writer | 2026-10-26 | ✅ |
+| [2026-10-26-drive-ratio-rerun.md](2026-10-26-drive-ratio-rerun.md) | Drive re-run with sonar cross-check: 166.6 ticks/cm rest-to-rest, 20:12 gearing inferred | 2026-10-26 | ✅ |
 
 ## Related
 

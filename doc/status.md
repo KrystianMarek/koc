@@ -15,6 +15,11 @@ _Last updated: 2026-10-26_
 
 ## Done recently
 
+- 2026-10-26: **drive odometry corrected to 166.6 ticks/cm** (was 161.0;
+  the probe missed the coast after each stop). The BrickPi counts 720 ticks
+  per motor revolution, so the track moves 4.32 cm per motor revolution,
+  consistent with 20:12 gearing on a 6-tooth sprocket. Sonar agrees at rest
+  — see [drive ratio re-run](sources/2026-10-26-drive-ratio-rerun.md).
 - 2026-10-26: **turret cable envelope**: the turret cannot turn more than
   180° either way from camera-forward. The v1 server and motord both enforce
   it from `~/.koc/turret.json` and lock the turret when its position is
@@ -34,10 +39,14 @@ _Last updated: 2026-10-26_
 ## Robot state
 
 Turret at C≈42308 (envelope center 42298), v1 server running, motord
-stopped.
+stopped. Robot 0.55 m (Kinect) from the obstacle ahead, 11 cm closer than
+at the start of the drive re-run.
 
 ## Next up
 
+- Count the drive sprocket and gear teeth to confirm 20:12 on a 6-tooth
+  sprocket; fix the drive-ratio probe's at-stop tick counting
+  (`koc-drive-ratio-probe-coast`).
 - Confirm the turret ratio (~116.7 vs 125 ticks/°) with an independent
   measurement before any absolute-position targets.
 - `koc-v2-turret-homing`: a homing landmark would let a locked turret

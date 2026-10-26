@@ -28,10 +28,11 @@ Status: ✅ live · 🚧 stub / planned
 | [sources/2026-10-25-turret-calibration.md](sources/2026-10-25-turret-calibration.md) | Turret gear ratio (~125 ticks/°, ±10 %) + color homing mark |
 | [sources/2026-10-25-turret-homing-run.md](sources/2026-10-25-turret-homing-run.md) | First homing sweep: sonar + Kinect + color landmark pair |
 | [sources/2026-10-25-swing90-run.md](sources/2026-10-25-swing90-run.md) | 90/180/90 turret swing reliability run |
-| [sources/2026-10-25-drive-ratio-run.md](sources/2026-10-25-drive-ratio-run.md) | Drive odometry: 161.0 ± 0.2 ticks/cm |
+| [sources/2026-10-25-drive-ratio-run.md](sources/2026-10-25-drive-ratio-run.md) | Drive odometry first run: 161.0 ticks/cm (at-stop counting, superseded) |
 | [sources/2026-10-25-turret-cable-incident.md](sources/2026-10-25-turret-cable-incident.md) | Turret cable wrap incident + v2 turret rules |
 | [sources/2026-10-26-turret-centering-run.md](sources/2026-10-26-turret-centering-run.md) | Turret re-centered by Kinect (C≈42298); motord lock starvation fixed; ~116.7 ticks/° |
 | [sources/2026-10-26-turret-envelope-run.md](sources/2026-10-26-turret-envelope-run.md) | ±180° envelope live checks: locks, limit stops and overshoot per writer |
+| [sources/2026-10-26-drive-ratio-rerun.md](sources/2026-10-26-drive-ratio-rerun.md) | Drive odometry corrected to 166.6 ticks/cm; sonar cross-check; 20:12 drive gearing inferred |
 | [guidance/](guidance/README.md) | External expert consultations (requests + responses) |
 | [inbox/](inbox/README.md) | Untriaged incoming feature requests |
 

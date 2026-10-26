@@ -13,6 +13,24 @@ Timeline: `grep "^## \[" doc/log.md | head`.
 
 ---
 
+## [2026-10-26] ingest | Drive re-run: odometry 166.6 ticks/cm, 20:12 drive gearing inferred, sonar cross-check
+
+Re-ran `drive_ratio_probe.py` v5 (3 rounds, PWM 60) against a flat
+obstacle 0.66 m ahead, with the sonar logged alongside the Kinect. The
+probe counts ticks at the stop command; the tracks coast another ~100–150
+ticks, so rest-to-rest deltas give **166.6 ± 1.1 ticks/cm** (six 19 cm
+legs; the blip 166.1). The 2026-10-25 value of 161.0 had the same
+undercount. The BrickPi counts **720 ticks per motor revolution**, so the
+track moves 4.32 cm per motor revolution: 1.67:1 on a 6-tooth sprocket,
+which matches the 12- and 20-tooth tan bevel gears in the photos
+(predicted 166.7). Sonar: 10 cm vs Kinect 9.9 cm on the blip, a constant
+~7 cm offset, no echo beyond ~62 cm on this obstacle. Turret wording fixed
+(42000 ticks per turn = ~58:1 motor:turret; "125:1" was ticks per degree).
+Raw: [sources/2026-10-26-drive-ratio-rerun.md](sources/2026-10-26-drive-ratio-rerun.md).
+Updated: [architecture/robot-hardware.md](architecture/robot-hardware.md),
+[status.md](status.md), the v2 plan's constants, agent lessons. Ticket:
+`koc-drive-ratio-probe-coast`.
+
 ## [2026-10-26] decision | Turret cable envelope ±180°, enforced in both motor writers; AGENTS.md rewritten
 
 User confirmed the turret faces camera-forward at C=42298 and the cables

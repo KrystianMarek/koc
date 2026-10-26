@@ -137,8 +137,9 @@ written.
 
 - **Kinect "Stream 70" storms** stall frames for 10–20 s after motion; if
   `kinect_bearing.py` reports few frames, wait and run it again.
-- **Sonar is blind while the tracks turn** and reads 255 when the obstacle is
-  out of its cone; use a reading taken at rest.
+- **Sonar reads 255 when the obstacle is out of its cone** (on 2026-10-26
+  beyond ~62 cm); readings during motion are coarse, so use one taken at
+  rest.
 - **Edge-touching obstacle runs are untrusted**: the obstacle is partly out
   of view, so its center is unknown. Make a smaller move toward it first.
 - **The 0.12 m depth gate** uses the sonar distance; a wrong sonar argument

@@ -50,11 +50,11 @@ Cross-cutting invariants (from Microduck, non-negotiable):
 
 ## Measured constants contract (v2 must reproduce; sources in robot-hardware.md)
 
-- Drive odometry: **161.0 ± 0.2 ticks/cm**; GoForward = LEFT encoder negative, RIGHT positive; drivetrain backlash < 0.4 cm per 40 cm round trip.
+- Drive odometry: **166.6 ± 1.1 ticks/cm** rest-to-rest (corrected 2026-10-26 from 161.0, which missed the ~100–150-tick coast after each stop; [re-run](../sources/2026-10-26-drive-ratio-rerun.md)); 720 encoder ticks per motor revolution; GoForward = LEFT encoder negative, RIGHT positive; drivetrain backlash < 0.4 cm per 40 cm round trip.
 - Turret: **~125 ticks/turret-degree (±10%)**; approach-direction backlash **~252 ticks** — homing must approach from one direction or model it. 2026-10-26 evidence points to **~116.7 ticks/° (one turn ≈ 42000 ticks)** — confirm before relying on absolute targets ([centering run](../sources/2026-10-26-turret-centering-run.md)).
 - Drive PWM→speed is non-linear: **~6–8 ticks/s per PWM unit** (the earlier "~1.16" was a units error, corrected 2026-10-25); calibrate a per-speed table, don't assume linearity.
 - Encoder state persists while the BrickPi is powered — never assume 0 after a daemon restart.
-- Sonar: PORT_4 **works at rest** (61 cm on 2026-10-26; `koc-hw-sonar-dead` closed — the earlier 255s were aim/range) but is blind while the tracks turn. motord implements the I2C workaround; nothing in the control path may *depend* on sonar data.
+- Sonar: PORT_4 **works at rest** (61 cm on 2026-10-26; `koc-hw-sonar-dead` closed — the earlier 255s were aim/range). It read during motion on the 2026-10-26 drive re-run (an earlier run saw 255 while the tracks turned), within ~1 cm of the Kinect at rest, and lost the echo beyond ~62 cm. motord implements the I2C workaround; nothing in the control path may *depend* on sonar data.
 - Kinect USB chain: post-motion respawn takes ~13–16 s — camerad's self-heal budget and every probe must tolerate it; the two-hub power chain stays until physically replaced.
 
 ## Phases (each ends with probes passing against the real robot)

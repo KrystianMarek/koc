@@ -41,11 +41,13 @@ page where an agent will meet it.
 
 | Rule | Evidence |
 |---|---|
-| Read the sonar at rest; 255 means no echo in its cone, not a dead sensor. | Written off on 2026-10-25, reads 61 cm on 2026-10-26 (`koc-hw-sonar-dead` closed). |
+| 255 from the sonar means no echo in its cone, not a dead sensor. It reads during motion too, but its 1 cm steps make it a coarse check only. | Written off on 2026-10-25, reads 61 cm on 2026-10-26 (`koc-hw-sonar-dead` closed); lost the echo beyond ~62 cm on the drive re-run ([capture](../sources/2026-10-26-drive-ratio-rerun.md)). |
 | Find an obstacle in the Kinect image by segmenting at the sonar range; distrust a run that touches the frame edge. | Nearest-10 % pixel averaging jumped to the frame edges ([centering run](../sources/2026-10-26-turret-centering-run.md)). |
 | Check the image handedness with a small known turret step before trusting a bearing sign. | The image is not mirrored: x > 320 means the turret points left of the target. |
 | After motion, wait ~16 s before a Kinect measurement. | USB "Stream 70" storms respawn the capture child ([kinect interface](../architecture/kinect-interface.md)). |
 | Recheck units on every derived rate. | "1.16 ticks/s per PWM unit" was a units error; the real figure is 6–8 ([robot hardware](../architecture/robot-hardware.md)). |
+| The BrickPi encoder counts 720 ticks per motor revolution (0.5° per tick), not 360. | Drive and turret gear ratios were stated at half their size until 2026-10-26 ([drive ratio re-run](../sources/2026-10-26-drive-ratio-rerun.md)). |
+| Measure distance moved against encoder deltas taken at rest, not at the stop command: the tracks coast ~100–150 ticks. | The 161.0 ticks/cm odometry was 3.5 % low ([drive ratio re-run](../sources/2026-10-26-drive-ratio-rerun.md)). |
 
 ## Related
 
