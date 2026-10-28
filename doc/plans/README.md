@@ -14,7 +14,7 @@ This directory contains implementation plans, feature roadmaps, and design docum
 | Plan | Description | Status | Date |
 |------|-------------|--------|------|
 | [Log, external/, hygiene](2026-09-28-log-external-hygiene.md) | Written for the upstream template repo, not this project | Parked | 2026-09-28 |
-| [K.O.C v2 implementation](2026-10-25-koc-v2-implementation.md) | Microduck-aligned Rust daemon stack; all open questions resolved | Approved | 2026-10-25 |
+| [K.O.C v2 implementation](2026-10-25-koc-v2-implementation.md) | Microduck-aligned Rust daemon stack; all open questions resolved | Parked during Phase 1 ([ADR-0001](../decisions/ADR-0001-pause-active-development.md)) | 2026-10-25 |
 | [Turret centering fixes](2026-10-26-turret-centering-fixes.md) | motord lock starvation, position-stopped turret moves, sonar-gated Kinect bearing | Complete (user confirmed facing) | 2026-10-26 |
 | [Turret envelope](2026-10-26-turret-envelope.md) | ±180° cable envelope enforced in the v1 server and motord, fail-closed | Complete | 2026-10-26 |
 

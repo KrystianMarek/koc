@@ -1,5 +1,9 @@
 # Plan: K.O.C v2 — Microduck-Aligned Stack Implementation
 
+**Status (2026-10-28): paused during Phase 1**
+([ADR-0001](../decisions/ADR-0001-pause-active-development.md)). The checkboxes below show what was done;
+Phases 2–5 were never started.
+
 ## Objective
 
 Rebuild the robot's software as small single-purpose Rust daemons over

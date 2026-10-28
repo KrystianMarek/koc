@@ -1,5 +1,9 @@
 # V2: Microduck-Aligned Software Stack
 
+**Paused 2026-10-28** during Phase 1 of the
+[v2 plan](../plans/2026-10-25-koc-v2-implementation.md) — see
+[ADR-0001](../decisions/ADR-0001-pause-active-development.md).
+
 ## Premise
 
 Rebuild K.O.C's software as a Microduck-style stack — small single-purpose

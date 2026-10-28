@@ -6,6 +6,10 @@ change in [log.md](log.md).
 
 ## North star (long horizon)
 
+**Paused since 2026-10-28** ([ADR-0001](decisions/ADR-0001-pause-active-development.md)): no goal below is
+being worked on. They stay as the direction if the project resumes; start
+from the [status](status.md) resume checklist.
+
 - **K.O.C v2**: a maintainable, safe, observable robot software stack on the
   existing hardware (RPi 3 + BrickPi+ + Kinect), architected like Microduck:
   single-purpose daemons over JSON-RPC/UDS, intents-not-motor-writes,
@@ -14,16 +18,16 @@ change in [log.md](log.md).
 - Keep v1 running as the reference while v2 phases land — each v2 phase must
   pass probe parity against the real robot before replacing v1 components.
 
-## Current cycle (short horizon)
+## Open when resumed (deferred in bd)
 
 - [ ] Finish Phase 1 (`koc-v2-motord-driver`): homing intent
       (`koc-v2-turret-homing`), in-daemon stall detection, probe-shim
       acceptance
 - [ ] Confirm turret ticks per degree (two estimates in
       [Measured constants](architecture/robot-hardware.md#measured-constants)) with an independent
-      measurement before using absolute turret targets
+      measurement before using absolute turret targets (`koc-turret-ratio-confirm`)
 - [ ] Count the drive gear and sprocket teeth to confirm the inferred drive
-      gearing
+      gearing (`koc-drive-gear-count`)
 - [ ] `koc-hw-kinect-wedge`: Stream-70 storms persist on the two-hub chain
 
 ## Achieved
@@ -38,6 +42,8 @@ change in [log.md](log.md).
   homing landmarks first measured
 - 2026-10-26: drive odometry corrected and drive gearing inferred; all
   gearing numbers consolidated in [Measured constants](architecture/robot-hardware.md#measured-constants)
+- 2026-10-28: project paused; wiki and `bd` left reflecting the known
+  state ([ADR-0001](decisions/ADR-0001-pause-active-development.md))
 - 2026-10-25: [v2 implementation plan](plans/2026-10-25-koc-v2-implementation.md)
   approved; Phase 1 `motord` reached read/motion parity with `BrickPi.py`
 - 2026-10-26: turret re-centered by Kinect; `motord` snapshot starvation

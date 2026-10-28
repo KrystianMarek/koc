@@ -13,6 +13,23 @@ Timeline: `grep "^## \[" doc/log.md | head`.
 
 ---
 
+## [2026-10-28] decision | Project paused; wiki and bd left reflecting the known stack
+
+Active development paused ([ADR-0001](decisions/ADR-0001-pause-active-development.md)):
+every electronic part of the robot is past its supported life (Kinect,
+BrickPi+, NXT, NCS1, Raspbian 9, Python 3.5 —
+[lifecycle capture](sources/2026-10-28-hardware-lifecycle.md)). The robot
+did not answer ssh or ping on 2026-10-28; the last observed state
+(2026-10-26) is recorded. [status.md](status.md) now describes the
+software and physical stack as left, the open physical questions and a
+resume checklist; goals, overview, the v2 plan and vision, robot
+deployment, robot hardware (new Hardware lifecycle section), the plans
+index, README and AGENTS.md carry the paused state. bd: every open ticket
+deferred with a handoff comment (none open or in progress);
+`koc-swing90` and `koc-v2-perception-accelerator` closed (done / decided
+in the v2 plan); new deferred tickets `koc-drive-gear-count` and
+`koc-turret-ratio-confirm`.
+
 ## [2026-10-26] lint | Gearing numbers consolidated into one Measured constants table
 
 Gearing, encoder, odometry and rate numbers were repeated on seven pages,

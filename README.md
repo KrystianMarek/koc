@@ -74,6 +74,10 @@ See [Raspberry Pi Setup Guide](doc/raspberry-pi-setup.md) for detailed instructi
 > [robot deployment](doc/development/robot-deployment.md). The v2 Rust daemons
 > live in `robot/` ([v2 plan](doc/plans/2026-10-25-koc-v2-implementation.md)).
 
+**Development is paused since 2026-10-28**
+([ADR-0001](doc/decisions/ADR-0001-pause-active-development.md)); the
+[status page](doc/status.md) describes the stack as left and how to resume.
+
 ### Legacy Setup (Deprecated)
 
 The old `install_dependencies.sh` script is still available but deprecated.

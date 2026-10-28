@@ -18,12 +18,15 @@ measurement changes one.
 |---|---|---|
 | v1 server (runs on the robot) | `server.py`, `app/server/` | Python **3.5** (Raspbian stretch), BrickPi.py, freenect, ZeroMQ + pickle |
 | v1 client (dev machine) | `gui.py`, `app/client/` | Python 3, PyQt5 |
-| v2 daemons (in progress) | `robot/` (`brickpi`, `rpc`, `motord`, `robotctl`) | Rust, std + libc only, built on the robot |
+| v2 daemons (paused during Phase 1) | `robot/` (`brickpi`, `rpc`, `motord`, `robotctl`) | Rust, std + libc only, built on the robot |
 | Probes and tests | `testing/` | run on the robot or from the dev machine; see each file's docstring |
 | Wiki | `doc/` | Markdown, agent-maintained |
 
 The robot is `pi@192.168.10.187` (passwordless SSH), code in
 `~/rpi_lego_robot`, Python env `~/.virtualenvs/pi_robot3`.
+
+**Status: paused since 2026-10-28.** Before any work, read the resume
+checklist in [doc/status.md](doc/status.md).
 
 ## Hard rules
 

@@ -1,6 +1,8 @@
 # Robot Deployment & Software State
 
-State of the software on the robot (192.168.10.187) as of 2026-10-26. Raw
+State of the software on the robot (192.168.10.187) as last observed on
+2026-10-26; on 2026-10-28 the robot did not answer ssh or ping (project
+paused, [ADR-0001](../decisions/ADR-0001-pause-active-development.md)). Raw
 evidence: [state capture](../sources/2026-10-24-robot-state-capture.md),
 [turret centering run](../sources/2026-10-26-turret-centering-run.md).
 

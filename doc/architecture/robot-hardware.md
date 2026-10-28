@@ -119,6 +119,16 @@ read their raw tick counts, not their derived ratios.
   "telemetry death" root cause. Now closed per read (bd
   `koc-hw-kinect-wedge`).
 
+## Hardware lifecycle
+
+Every electronic part is past its supported life: Kinect out of production
+since 2017, BrickPi+ superseded by the BrickPi3 in 2017, LEGO Mindstorms
+(the NXT motors and sensors) discontinued in 2022, the NCS1 SDK archived
+in 2019, Raspbian 9 out of long-term support since 2022, Python 3.5 end of
+life since 2020. Details and references:
+[lifecycle capture](../sources/2026-10-28-hardware-lifecycle.md). This is
+why development is paused ([ADR-0001](../decisions/ADR-0001-pause-active-development.md)).
+
 ## Dependencies
 
 - OS: Raspbian 9 stretch, Python 3.5.3 — pins the codebase's compat choices

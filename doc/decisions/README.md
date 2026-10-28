@@ -51,7 +51,7 @@ Proposed → Accepted → [Deprecated | Superseded]
 
 | ADR | Title | Status | Date |
 |-----|-------|--------|------|
-| _none yet_ | — | — | — |
+| [ADR-0001](ADR-0001-pause-active-development.md) | Pause active development of K.O.C | Accepted | 2026-10-28 |
 
 ---
 

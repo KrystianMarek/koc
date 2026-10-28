@@ -12,7 +12,7 @@ Status: ✅ live · 🚧 stub / planned
 |---|---|---|
 | [overview.md](overview.md) | High-level idea: what this project is, who uses it, headline tech | ✅ |
 | [goals.md](goals.md) | Long-horizon (north star) and short-horizon (current cycle) goals | ✅ |
-| [status.md](status.md) | Current progress snapshot, cross-linked to `bd` | ✅ |
+| [status.md](status.md) | Current snapshot (paused), stack as left, resume checklist | ✅ |
 | [log.md](log.md) | Append-only chronological log of ingests / decisions / progress / lint | ✅ |
 | [index.md](index.md) | This catalog | ✅ |
 
@@ -33,6 +33,7 @@ Status: ✅ live · 🚧 stub / planned
 | [sources/2026-10-26-turret-centering-run.md](sources/2026-10-26-turret-centering-run.md) | Turret re-centered by Kinect (C≈42298); motord lock starvation fixed; second turret ticks-per-degree estimate |
 | [sources/2026-10-26-turret-envelope-run.md](sources/2026-10-26-turret-envelope-run.md) | ±180° envelope live checks: locks, limit stops and overshoot per writer |
 | [sources/2026-10-26-drive-ratio-rerun.md](sources/2026-10-26-drive-ratio-rerun.md) | Drive odometry re-run rest to rest; sonar cross-check; drive gearing inferred |
+| [sources/2026-10-28-hardware-lifecycle.md](sources/2026-10-28-hardware-lifecycle.md) | End-of-life status of every robot part; robot unreachable on 2026-10-28 |
 | [guidance/](guidance/README.md) | External expert consultations (requests + responses) |
 | [inbox/](inbox/README.md) | Untriaged incoming feature requests |
 
@@ -45,6 +46,7 @@ Status: ✅ live · 🚧 stub / planned
 | [architecture/brickpi-interface.md](architecture/brickpi-interface.md) | BrickPi+ UART protocol + v2 driver strategy |
 | [architecture/kinect-interface.md](architecture/kinect-interface.md) | Kinect v1 / libfreenect stack + v2 capture strategy |
 | [decisions/](decisions/README.md) | Architecture Decision Records (ADRs) |
+| [decisions/ADR-0001-pause-active-development.md](decisions/ADR-0001-pause-active-development.md) | Active development paused 2026-10-28 (end-of-life hardware) |
 | [considerations/](considerations/README.md) | Open trade-offs, risks, unresolved questions |
 | [vision/](vision/README.md) | Exploratory product ideas and future concepts |
 | [vision/v2-microduck-stack.md](vision/v2-microduck-stack.md) | V2 direction: microduck-aligned Rust daemon stack on existing hardware |
@@ -81,7 +83,7 @@ stack unless a newer wiki page says otherwise.
 | Area | Summary |
 |---|---|
 | [plans/](plans/README.md) | Implementation plans and task tracking |
-| [plans/2026-10-25-koc-v2-implementation.md](plans/2026-10-25-koc-v2-implementation.md) | v2 Rust daemon stack plan (approved; Phase 1 in progress) |
+| [plans/2026-10-25-koc-v2-implementation.md](plans/2026-10-25-koc-v2-implementation.md) | v2 Rust daemon stack plan (approved; paused during Phase 1) |
 | [plans/2026-10-26-turret-centering-fixes.md](plans/2026-10-26-turret-centering-fixes.md) | Turret centering fixes (complete; user confirmed facing) |
 | [plans/2026-10-26-turret-envelope.md](plans/2026-10-26-turret-envelope.md) | ±180° turret cable envelope in the v1 server and motord (complete) |
 | [plans/2026-09-28-log-external-hygiene.md](plans/2026-09-28-log-external-hygiene.md) | Plan written for the upstream template repo; not applicable here (parked) |
